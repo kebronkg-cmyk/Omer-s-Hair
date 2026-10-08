@@ -5,3 +5,4 @@
 3 0e30372 Bilder bearbeitet, nur Blau, neuer Standort-Auftakt
 4 b5c741f Versionsmarken, Safari-sichere Chromschrift
 5 74d8a7b Ladenfronten, Stadtpläne, Preis-Akkordeon, Glasoptik
+6 49e5710 Glas-Schrift, Ladenfronten, Riem-Seite, Preis-Studio
