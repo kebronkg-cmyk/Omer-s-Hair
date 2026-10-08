@@ -88,12 +88,13 @@ S = {s['id']: s for s in SALONS}
 # verfügbare Breiten je Bild (klein, groß)
 BREITEN = {
     'karte-mira': (640, 1200), 'karte-isartor': (640, 1200), 'karte-bogenhausen': (640, 1200), 'karte-riem': (640, 1200),
-    'karte-barber': (448, 448), 'mira-hoch': (700, 1400), 'isartor-neon': (700, 1400),
+    'karte-barber': (640, 1000),
+    'ort-mira': (700, 1400), 'ort-isartor': (700, 1400), 'ort-barber': (640, 1000),
+    'mira-werkzeug': (700, 1400), 'isartor-raum': (900, 1500), 'isartor-spiegel': (700, 1100), 'isartor-tresen': (700, 1100),
+    'barber-raum': (900, 1500),
 }
-for _n in ('reihe', 'tische', 'stuhl', 'empfang', 'wasch', 'herren', 'werkzeug', 'pflege'):
+for _n in ('reihe', 'herren', 'wasch', 'tische', 'empfang', 'pflege'):
     BREITEN['mira-' + _n] = (900, 1800)
-for _n in ('barber-stuehle', 'barber-raum', 'barber-eingang', 'isartor-raum', 'isartor-spiegel', 'isartor-empfang', 'isartor-tresen'):
-    BREITEN[_n] = (480, 900)   # ältere Fotos, nur 900 px breit
 
 TAGE = [('1', 'Montag'), ('2', 'Dienstag'), ('3', 'Mittwoch'), ('4', 'Donnerstag'), ('5', 'Freitag'), ('6', 'Samstag'), ('0', 'Sonntag')]
 
@@ -109,6 +110,8 @@ ICO = {
     'zu': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>',
     'links': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>',
     'rechts': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>',
+    'pause': '<svg class="ico ico-pause" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="7" y="6" width="3.2" height="12" rx="1"/><rect x="13.8" y="6" width="3.2" height="12" rx="1"/></svg>',
+    'spiel': '<svg class="ico ico-spiel" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8.5 6.2v11.6a.8.8 0 0 0 1.2.7l9-5.8a.8.8 0 0 0 0-1.4l-9-5.8a.8.8 0 0 0-1.2.7Z"/></svg>',
     'schere': '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="6.5" cy="17" r="2.8"/><circle cx="17.5" cy="17" r="2.8"/><path d="M8.5 15 17 3.5M15.5 15 7 3.5"/></svg>',
 }
 
@@ -362,6 +365,24 @@ def ring_karte(s, p, i):
       </li>'''
 
 
+def ue_zeile(s, p, i):
+    if s['seite']:
+        href, rel = f'{p}{s["seite"]}', ''
+    else:
+        href, rel = s['extern'], ' rel="noopener"'
+    if s['buchen']:
+        tun = f'<a class="knopf knopf-klein" href="{s["buchen"]}" rel="noopener">{ICO["kalender"]}<span>Termin</span></a>'
+    elif s['id'] == 'barber-mira':
+        tun = f'<a class="knopf-still knopf-klein" href="tel:{s["tel_int"]}">{ICO["telefon"]}<span>Anrufen</span></a>'
+    else:
+        tun = f'<a class="knopf-still knopf-klein" href="{s["extern"]}" rel="noopener"><span>Zum Salon</span>{ICO["extern"]}</a>'
+    return (f'<li><div class="ue-name"><span class="nr">{i + 1:02d}</span><div><a href="{href}"{rel}>{e(s["name"])}</a><small>{e(s["lage"])}</small></div></div>'
+            f'<p class="ue-adresse">{e(s["strasse"])}<br>{s["plz"]} {s["ort"]}</p>'
+            f'<p class="ue-stand"><span class="stand" data-zeiten="{zeiten_attr(s)}">{e(s["zeiten_text"])}</span></p>'
+            f'<p class="ue-tel"><a href="tel:{s["tel_int"]}">{s["tel"]}</a></p>'
+            f'<div class="ue-tun">{tun}</div></li>')
+
+
 def startseite():
     p = ''
     org = {
@@ -421,6 +442,7 @@ def startseite():
     <div class="huelle ring-panel">
       <div class="ring-panel-info" aria-live="polite"></div>
       <div class="ring-steuer">
+        <button class="ring-pfeil ring-auto" type="button" data-ring-auto aria-pressed="true" aria-label="Automatisches Drehen anhalten">{ICO["pause"]}{ICO["spiel"]}</button>
         <button class="ring-pfeil" type="button" data-ring-zurueck aria-label="Vorheriger Salon">{ICO["links"]}</button>
         <button class="ring-pfeil" type="button" data-ring-vor aria-label="Nächster Salon">{ICO["rechts"]}</button>
         <span class="zaehler">01 / 05</span>
@@ -428,10 +450,20 @@ def startseite():
     </div>
   </section>
 
+  <section class="abschnitt" style="padding-top:clamp(2rem,4vw,3rem)" aria-labelledby="ue-titel">
+    <div class="huelle">
+      <div class="abschnitt-kopf">
+        <p class="etikett"><b>02</b> Auf einen Blick</p>
+        <h2 class="titel-s" id="ue-titel">Alle Salons, Zeiten und Nummern.</h2>
+      </div>
+      <ul class="uebersicht">{''.join(ue_zeile(s, p, i) for i, s in enumerate(SALONS))}</ul>
+    </div>
+  </section>
+
   <section class="abschnitt" aria-labelledby="haus-titel">
     <div class="huelle">
       <div class="abschnitt-kopf">
-        <p class="etikett"><b>02</b> Handwerk</p>
+        <p class="etikett"><b>03</b> Handwerk</p>
         <h2 class="titel-m" id="haus-titel">Meisterhand in jedem Salon.</h2>
         <p>Hinter Omer’s Hair steht Friseurmeister Omer Khalil Kotschali – und ein Anspruch, der überall gilt: ausführliche Beratung, saubere Arbeit und ein Ergebnis, das zu Ihnen passt.</p>
       </div>
@@ -444,12 +476,12 @@ def startseite():
     </div>
   </section>
 
-  {stimmen_abschnitt("03", "Was Gäste über uns sagen.", "Echte Bewertungen aus dem Salon MIRA, gesammelt nach jedem Termin auf Planity.")}
+  {stimmen_abschnitt("04", "Was Gäste über uns sagen.", "Echte Bewertungen aus dem Salon MIRA, gesammelt nach jedem Termin auf Planity.")}
 
   <section class="abschnitt" aria-labelledby="insta-titel">
     <div class="huelle insta">
       <div class="insta-text">
-        <p class="etikett"><b>04</b> Einblicke</p>
+        <p class="etikett"><b>05</b> Einblicke</p>
         <h2 class="insta-griff" id="insta-titel"><a class="chrom" href="{INSTAGRAM}" rel="noopener">@omers_hair_<wbr>professional</a></h2>
         <p class="leise">Neue Looks, Farben und Blicke hinter die Kulissen – auf Instagram. Der Salon MIRA hat zusätzlich einen eigenen Kanal.</p>
         <div class="knoepfe">
@@ -458,9 +490,9 @@ def startseite():
         </div>
       </div>
       <div class="insta-kacheln">
-        <a href="{INSTAGRAM}" rel="noopener" aria-label="Instagram: Salon Isartor">{bild("isartor-neon", "Leuchtschild am Salon Isartor", p, "(max-width: 52rem) 33vw, 16vw")}</a>
-        <a href="{INSTAGRAM_MIRA}" rel="noopener" aria-label="Instagram: Salon MIRA">{bild("mira-hoch", "Waschplätze mit Farbregal im Salon MIRA", p, "(max-width: 52rem) 33vw, 16vw")}</a>
-        <a href="{INSTAGRAM}" rel="noopener" aria-label="Instagram: Salon MIRA">{bild("mira-stuhl", "Frisierstuhl mit Logo", p, "(max-width: 52rem) 33vw, 16vw")}</a>
+        <a href="{INSTAGRAM}" rel="noopener" aria-label="Instagram: Salon Isartor">{bild("karte-isartor", "Leuchtschild am Salon Isartor", p, "(max-width: 52rem) 33vw, 16vw")}</a>
+        <a href="{INSTAGRAM_MIRA}" rel="noopener" aria-label="Instagram: Salon MIRA">{bild("ort-mira", "Frisierstuhl mit Logo im Salon MIRA", p, "(max-width: 52rem) 33vw, 16vw")}</a>
+        <a href="{INSTAGRAM}" rel="noopener" aria-label="Instagram: Salon MIRA">{bild("mira-werkzeug", "Werkzeug am Frisierplatz", p, "(max-width: 52rem) 33vw, 16vw")}</a>
       </div>
     </div>
   </section>
@@ -495,7 +527,8 @@ def zeiten_tabelle(s):
         <p class="zeiten-hinweis">An Feiertagen können die Zeiten abweichen.</p>'''
 
 
-def ort_auftakt(s, p, hero, h1, einleitung, zeichen, wertung=True):
+def ort_auftakt(s, p, nr, hero, h1, einleitung, kapitel, wertung=True):
+    """Auftakt einer Standortseite: Name groß in Chrom, daneben ein gebogener Spiegel mit dem besten Foto."""
     knoepfe = []
     if s['buchen']:
         knoepfe.append(f'<a class="knopf" href="{s["buchen"]}" rel="noopener">{ICO["kalender"]}<span>Termin buchen</span></a>')
@@ -505,28 +538,30 @@ def ort_auftakt(s, p, hero, h1, einleitung, zeichen, wertung=True):
     knoepfe.append(f'<a class="knopf-still" href="{route(s)}" rel="noopener">{ICO["route"]}<span>Route</span></a>')
     w = f'<a class="ort-wertung" href="#stimmen">{ICO["stern"]}<span><b>4,7</b> · 207 Bewertungen</span></a>' if wertung else ''
     name, alt = hero
+    kap = ''.join(f'<a href="#{k}"><small>{i + 1:02d}</small>{e(t_)}</a>' for i, (k, t_) in enumerate(kapitel))
+    if s['buchen']:
+        kap += f'<a class="knopf knopf-klein kapitel-termin" href="{s["buchen"]}" rel="noopener">{ICO["kalender"]}<span>Termin buchen</span></a>'
+    else:
+        kap += f'<a class="knopf knopf-klein kapitel-termin" href="tel:{s["tel_int"]}">{ICO["telefon"]}<span>{s["tel"]}</span></a>'
     return f'''<section class="ort-auftakt" aria-labelledby="ort-titel">
-    <div class="ort-bild">{bild(name, alt, p, "100vw", "eager", prio=True)}</div>
-    <div class="huelle">
+    <div class="huelle ort-raster">
+      <div class="ort-weg"><p class="etikett"><b>{nr} / 05</b> {e(s["lage"])}</p><p class="etikett"><a href="{p}index.html#salons">Alle Salons</a></p></div>
       {riesen([s["riesen"]])}
-      <div class="ort-raster">
-        <div class="ort-text">
-          <p class="etikett"><b>{e(s["name"])}</b> {e(s["zusatz"] or s["ort"])}</p>
-          <h1 id="ort-titel">{h1}</h1>
-          <p class="einleitung">{einleitung}</p>
-          <div class="ort-fakten"><p class="stand" data-zeiten="{zeiten_attr(s)}">{e(s["zeiten_text"])}</p>{w}</div>
-          <div class="knoepfe">{''.join(knoepfe)}</div>
-        </div>
-        <div class="ort-karte">
-          <span><b>{e(s["strasse"])}</b>{zeichen}</span>
-          <hr>
-          <span>Telefon<br><a href="tel:{s["tel_int"]}">{s["tel"]}</a></span>
-          <hr>
-          <span>{e(s["zeiten_text"])}</span>
-        </div>
+      <div class="ort-spiegel"><div class="bogen">{bild(name, alt, p, "(max-width: 52rem) 92vw, 34rem", "eager", prio=True)}<span class="bogen-schein" aria-hidden="true"></span></div></div>
+      <div class="ort-text">
+        <h1 id="ort-titel">{h1}</h1>
+        <p class="einleitung">{einleitung}</p>
+        <div class="ort-fakten"><p class="stand" data-zeiten="{zeiten_attr(s)}">{e(s["zeiten_text"])}</p>{w}</div>
+        <div class="knoepfe">{''.join(knoepfe)}</div>
+        <dl class="ort-daten">
+          <div><dt>Adresse</dt><dd>{e(s["strasse"])}<br>{s["plz"]} {s["ort"]}</dd></div>
+          <div><dt>Telefon</dt><dd><a href="tel:{s["tel_int"]}">{s["tel"]}</a></dd></div>
+          <div><dt>Geöffnet</dt><dd>{e(s["zeiten_text"])}</dd></div>
+        </dl>
       </div>
     </div>
   </section>
+  <div class="kapitel-halter"><nav class="huelle kapitel" aria-label="Auf dieser Seite">{kap}</nav></div>
 '''
 
 
@@ -685,10 +720,10 @@ def seite_mira():
     seite += '<body>\n'
     seite += leiste(p, 'mira', (s['buchen'], 'Termin', True))
     seite += '<main id="inhalt">\n  '
-    seite += ort_auftakt(s, p, ('mira-tische', 'Frisierplätze mit Glastischen und Lichtsäulen im Salon MIRA'),
+    seite += ort_auftakt(s, p, '01', ('ort-mira', 'Frisierstuhl mit eingesticktem Logo im Salon MIRA'),
                          'Ihr Friseur im Münchner Norden.',
                          'Hell, herzlich und mitten im MIRA: Schnitt, Farbe und Balayage für Damen, Herren und Kinder – mit Termin ganz ohne Wartezeit.',
-                         'Untergeschoss · U2 Dülferstraße')
+                         [('preise', 'Preise'), ('salon', 'Salon'), ('fan-card', 'Fan Card'), ('stimmen', 'Stimmen'), ('anfahrt', 'Anfahrt')])
     seite += f'''
   <section class="abschnitt" id="preise" aria-labelledby="preise-titel">
     <div class="huelle">
@@ -708,13 +743,12 @@ def seite_mira():
       </div>
       {galerie([
           ("mira-reihe", "Frisierplätze mit Lichtsäulen und Blick ins MIRA", "breit"),
-          ("mira-hoch", "Waschplätze mit Farbregal", "hoch"),
-          ("mira-stuhl", "Frisierstuhl mit Logo", ""),
-          ("mira-empfang", "Empfang mit Preisliste und Orchidee", ""),
+          ("mira-werkzeug", "Kämme, Scheren und Pinsel am Platz", "hoch"),
+          ("mira-tische", "Frisierstühle an Glastischen", ""),
           ("mira-wasch", "Drei Waschplätze mit gesteppten Liegen", ""),
           ("mira-herren", "Herrenplätze mit Barber-Stühlen", "breit"),
-          ("mira-werkzeug", "Kämme, Scheren und Pinsel am Platz", ""),
-          ("mira-pflege", "Regal mit Pflege- und Stylingprodukten", "breit"),
+          ("mira-empfang", "Empfang mit Preisliste und Orchidee", ""),
+          ("mira-pflege", "Regal mit Pflege- und Stylingprodukten", "band"),
       ], p)}
     </div>
   </section>
@@ -756,14 +790,14 @@ def seite_barber():
     s = S['barber-mira']; p = '../'
     seite = kopf(p, "Barber Shop MIRA – Barber im MIRA München | Omer's Hair",
                  "Barber Shop im MIRA Einkaufszentrum, Schleißheimer Str. 506 (EG), 80933 München. Haarschnitt, Maschinenschnitt und Bart. Mo–Sa 9:30–20:00.",
-                 ldjson=schema_salon(s, '../'), welt='barber', bild_og='karte-barber-448')
+                 ldjson=schema_salon(s, '../'), bild_og='karte-barber-1000')
     seite += '<body>\n'
     seite += leiste(p, 'barber-mira', (f'tel:{s["tel_int"]}', 'Anrufen', False))
     seite += '<main id="inhalt">\n  '
-    seite += ort_auftakt(s, p, ('barber-raum', 'Blick durch den Barber Shop mit Holztresen und Lederstühlen'),
+    seite += ort_auftakt(s, p, '02', ('ort-barber', 'Barber-Stuhl aus Leder im Barber Shop MIRA'),
                          'Schnitt, Fade &amp; Bart.',
                          'Lederstühle, Holz und ein ruhiges Händchen: der Barber Shop im Erdgeschoss des MIRA. Rufen Sie kurz an – wir nehmen uns Zeit für Sie.',
-                         'Erdgeschoss · eine Etage über dem Salon MIRA', wertung=False)
+                         [('laden', 'Laden'), ('anfahrt', 'Anfahrt')], wertung=False)
     seite += f'''
   <section class="abschnitt" id="laden" aria-labelledby="laden-titel">
     <div class="huelle">
@@ -771,7 +805,7 @@ def seite_barber():
         <p class="etikett"><b>01</b> Der Laden</p>
         <h2 class="titel-m" id="laden-titel">Holz, Leder, klare Linien.</h2>
       </div>
-      {galerie([("barber-stuehle", "Barber-Stühle vor Spiegeln mit Holztresen", "breit"), ("barber-eingang", "Eingang des Barber Shops im MIRA", "")], p)}
+      {galerie([("barber-raum", "Blick durch den Barber Shop mit Holztresen und Lederstühlen", "voll")], p)}
       <div class="bald" style="margin-top:2.5rem">
         <span class="bald-zeichen" aria-hidden="true">{ICO["schere"]}</span>
         <div><h3>Preisliste folgt in Kürze</h3><p>Bis dahin beantworten wir Ihre Fragen gern am Telefon unter <a href="tel:{s["tel_int"]}">{s["tel"]}</a>.</p></div>
@@ -790,14 +824,14 @@ def seite_isartor():
     s = S['isartor']; p = '../'
     seite = kopf(p, "Salon Isartor – Friseur in der Altstadt München | Omer's Hair",
                  "Friseur am Isartor: Zweibrückenstr. 5–7 (Breiterhof-Passage), 80331 München. Schnitt, Farbe und Styling. Mo–Sa 9:00–19:00 – online buchen.",
-                 ldjson=schema_salon(s, '../'), welt='isartor', bild_og='karte-isartor-1200')
+                 ldjson=schema_salon(s, '../'), bild_og='karte-isartor-1200')
     seite += '<body>\n'
     seite += leiste(p, 'isartor', (s['buchen'], 'Termin', True))
     seite += '<main id="inhalt">\n  '
-    seite += ort_auftakt(s, p, ('isartor-neon', 'Leuchtschild Omer’s Hair über dem Eingang des Salons Isartor'),
+    seite += ort_auftakt(s, p, '03', ('ort-isartor', 'Blau leuchtendes Schild Omer’s Hair über dem Eingang des Salons Isartor'),
                          'Schwarz, Gold &amp; Neon – am Isartor.',
                          'Bogenspiegel mit Lichtkante, goldene Details und viel Ruhe: unser Salon in der Breiterhof-Passage, wenige Schritte vom Isartor.',
-                         'Breiterhof-Passage · S-Bahn Isartor', wertung=False)
+                         [('salon', 'Salon'), ('anfahrt', 'Anfahrt')], wertung=False)
     seite += f'''
   <section class="abschnitt" id="salon" aria-labelledby="salon-titel">
     <div class="huelle">
@@ -805,7 +839,7 @@ def seite_isartor():
         <p class="etikett"><b>01</b> Der Salon</p>
         <h2 class="titel-m" id="salon-titel">Ein Raum wie ein Schmuckkästchen.</h2>
       </div>
-      {galerie([("isartor-raum", "Bogenspiegel und goldene Stäbe im Salon Isartor", "breit"), ("isartor-spiegel", "Bogenspiegel mit Lichtkante", ""), ("isartor-empfang", "Schwarzer Empfangstresen mit Goldornament", ""), ("isartor-tresen", "Empfang im Salon Isartor", "breit")], p)}
+      {galerie([("isartor-raum", "Bogenspiegel und goldene Stäbe im Salon Isartor", "breit"), ("isartor-spiegel", "Bogenspiegel mit Lichtkante", "hoch"), ("isartor-tresen", "Goldornament am schwarzen Empfangstresen", "breit")], p)}
       <div class="bald" style="margin-top:2.5rem">
         <span class="bald-zeichen" aria-hidden="true">{ICO["schere"]}</span>
         <div><h3>Preisliste folgt in Kürze</h3><p>Alle Leistungen und freien Termine sehen Sie schon jetzt direkt bei <a href="{s["buchen"]}" rel="noopener">Planity</a>.</p></div>

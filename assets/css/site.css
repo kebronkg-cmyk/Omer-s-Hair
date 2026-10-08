@@ -29,15 +29,17 @@
   --linie-3: rgb(255 255 255 / .26);
 
   /* Neon: Blau aus dem Leuchtschild, Violett und Pink als Spiegelung */
-  --blau: #5b8cff;
-  --violett: #9d6bff;
-  --pink: #ff5fd2;
-  --neon: linear-gradient(90deg, var(--blau), var(--violett) 55%, var(--pink));
-  --neon-schein: rgb(91 140 255 / .45);
+  --blau: #3f82ff;          /* Leuchtschild, gemessen und aufgehellt */
+  --blau-hell: #8fbaff;
+  --blau-eis: #d9e7ff;
+  --blau-tief: #1747c9;
+  --neon: linear-gradient(90deg, var(--blau-tief), var(--blau) 45%, var(--blau-hell));
+  --neon-schein: rgb(63 130 255 / .5);
   --offen: #7ef0b0;
 
   /* Chrom für große Schrift */
-  --chrom: linear-gradient(178deg, #ffffff 0%, #e4e7f3 26%, #8c92ae 46%, #23253a 52%, #6f7798 58%, #e9ebf6 80%, #ffffff 100%);
+  --chrom: linear-gradient(180deg, #ffffff 0%, #eef2fa 16%, #c5ccdc 33%, #f7f9fd 44%, #59627a 49.5%, #0d1018 52%, #222b42 57%, #5c7fc4 70%, #b9d0ff 84%, #f2f7ff 100%);
+  --chrom-glanz: linear-gradient(100deg, transparent 42%, rgb(255 255 255 / .95) 50%, transparent 58%);
 
   --schrift: 'Jost', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --rand: clamp(16px, 3.6vw, 48px);
@@ -53,7 +55,6 @@
 }
 
 /* Barber Shop: Holz und Lila aus dem Laden */
-[data-welt='barber'] { --blau: #c98a4a; --violett: #b88aa6; --pink: #e7a46b; --neon-schein: rgb(201 138 74 / .45); }
 
 *, *::before, *::after { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -79,7 +80,7 @@ button { font: inherit; color: inherit; }
 address { font-style: normal; }
 h1, h2, h3 { margin: 0; font-weight: 500; line-height: 1; letter-spacing: -.03em; text-wrap: balance; }
 p { margin: 0; text-wrap: pretty; }
-::selection { background: var(--violett); color: #fff; }
+::selection { background: var(--blau); color: #fff; }
 :focus-visible { outline: 1.5px solid var(--blau); outline-offset: 4px; border-radius: 6px; }
 
 .huelle { width: min(100% - 2 * var(--rand), var(--breite)); margin-inline: auto; }
@@ -101,8 +102,15 @@ main, .fuss { position: relative; z-index: 2; }
 /* ---------- Schrift ---------- */
 
 .chrom {
-  background: var(--chrom); -webkit-background-clip: text; background-clip: text; color: transparent;
+  background: var(--chrom-glanz) 160% 0 / 260% 100% no-repeat, var(--chrom);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
 }
+/* Große Chromschrift: feine Kante oben, Schatten unten, blauer Hauch — wie gegossenes Metall */
+.riesen { filter: drop-shadow(0 1px 0 rgb(255 255 255 / .3)) drop-shadow(0 -1px 0 rgb(0 0 0 / .85)) drop-shadow(0 14px 34px rgb(63 130 255 / .22)); }
+@media (prefers-reduced-motion: no-preference) {
+  .js .riesen .chrom { animation: buchstabe 1.4s var(--kurve-weich) backwards, glanz 9s var(--kurve) 1.6s infinite; animation-delay: calc(var(--b) * 45ms + .1s), calc(var(--b) * 70ms + 1.6s); }
+}
+@keyframes glanz { 0% { background-position: 160% 0, 0 0; } 22%, 100% { background-position: -60% 0, 0 0; } }
 .marke-text { font-weight: 600; text-transform: uppercase; letter-spacing: -.045em; line-height: .78; }
 .etikett {
   display: inline-flex; flex-wrap: wrap; align-items: center; gap: .35rem .7rem;
@@ -131,7 +139,7 @@ main, .fuss { position: relative; z-index: 2; }
 .knopf { background: #0e0e15; color: #fff; border: 0; box-shadow: 0 0 22px -6px var(--neon-schein); }
 .knopf::before {
   content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; padding: 1.5px;
-  background: conic-gradient(from var(--winkel), var(--blau), var(--violett), var(--pink), var(--blau));
+  background: conic-gradient(from var(--winkel), var(--blau-tief), var(--blau), var(--blau-eis), var(--blau), var(--blau-tief));
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
   mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
 }
@@ -229,6 +237,7 @@ main, .fuss { position: relative; z-index: 2; }
 
 /* ---------- Startseite: Auftakt mit 3D ---------- */
 
+.auftakt { background: radial-gradient(55% 45% at 62% 44%, rgb(63 130 255 / .13), transparent 72%); }
 .auftakt { position: relative; min-height: calc(100svh - var(--kopf)); display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr auto; overflow: clip; isolation: isolate; }
 .auftakt-3d { position: absolute; inset: 0; z-index: -1; width: 100%; height: 100%; display: block; opacity: 0; transition: opacity 1.6s var(--kurve); }
 .auftakt-3d.bereit { opacity: 1; }
@@ -298,6 +307,12 @@ main, .fuss { position: relative; z-index: 2; }
 }
 .ring-pfeil svg { width: 1.1rem; height: 1.1rem; }
 @media (hover: hover) and (pointer: fine) { .ring-pfeil:hover { border-color: var(--text); background: rgb(255 255 255 / .08); } }
+.ring-auto { position: relative; }
+.ring-auto .ico-pause, .ring-auto[aria-pressed='false'] .ico-spiel { display: block; }
+.ring-auto .ico-spiel, .ring-auto[aria-pressed='false'] .ico-pause { display: none; }
+.ring-auto[aria-pressed='true']::after { content: ''; position: absolute; inset: -3px; border-radius: 50%; border: 1.5px solid transparent; border-top-color: var(--blau); }
+@media (prefers-reduced-motion: no-preference) { .ring-auto[aria-pressed='true']::after { animation: drehen 6.5s linear infinite; } }
+@keyframes drehen { to { transform: rotate(360deg); } }
 .finder-antwort { min-height: 1.5em; font-size: .9rem; color: var(--text-2); }
 .finder-antwort b { color: var(--text); font-weight: 500; }
 
@@ -339,9 +354,9 @@ main, .fuss { position: relative; z-index: 2; }
 .streifen.letzter::after { border-radius: inherit; }
 /* Neonkante am aktiven Spiegel */
 .streifen { box-shadow: 0 -1px 0 rgb(255 255 255 / calc(var(--kante, 0) * .9)), 0 1px 0 rgb(255 255 255 / calc(var(--kante, 0) * .5)); }
-.ring-karte.aktiv .streifen { box-shadow: 0 -1.5px 0 var(--blau), 0 1.5px 0 var(--violett), 0 -10px 24px -14px var(--blau), 0 10px 24px -14px var(--pink); }
-.ring-karte.aktiv .streifen.erster { box-shadow: -1.5px 0 0 var(--blau), 0 -1.5px 0 var(--blau), 0 1.5px 0 var(--violett), -10px 0 24px -12px var(--blau); }
-.ring-karte.aktiv .streifen.letzter { box-shadow: 1.5px 0 0 var(--pink), 0 -1.5px 0 var(--blau), 0 1.5px 0 var(--violett), 10px 0 24px -12px var(--pink); }
+.ring-karte.aktiv .streifen { box-shadow: 0 -1.5px 0 var(--blau-hell), 0 1.5px 0 var(--blau), 0 -10px 24px -14px var(--blau), 0 10px 26px -14px var(--blau); }
+.ring-karte.aktiv .streifen.erster { box-shadow: -1.5px 0 0 var(--blau-hell), 0 -1.5px 0 var(--blau-hell), 0 1.5px 0 var(--blau), -12px 0 26px -12px var(--blau); }
+.ring-karte.aktiv .streifen.letzter { box-shadow: 1.5px 0 0 var(--blau-hell), 0 -1.5px 0 var(--blau-hell), 0 1.5px 0 var(--blau), 12px 0 26px -12px var(--blau); }
 .ring-schatten { position: absolute; left: 50%; bottom: -2.4rem; width: min(70vw, 760px); height: 3rem; translate: -50% 0; border-radius: 50%; background: radial-gradient(closest-side, rgb(91 140 255 / .22), transparent); filter: blur(6px); pointer-events: none; }
 
 /* Info zum aktiven Salon */
@@ -443,53 +458,100 @@ main, .fuss { position: relative; z-index: 2; }
   padding: clamp(1.8rem, 4vw, 3.2rem); border-radius: var(--rund); border: 1px solid var(--linie-2);
   background: var(--grund-2);
 }
-.ruf::before { content: ''; position: absolute; inset: -40% -10% auto auto; width: 60%; aspect-ratio: 1; z-index: -1; background: radial-gradient(closest-side, rgb(157 107 255 / .3), transparent); }
+.ruf::before { content: ''; position: absolute; inset: -40% -10% auto auto; width: 60%; aspect-ratio: 1; z-index: -1; background: radial-gradient(closest-side, rgb(63 130 255 / .28), transparent); }
 .ruf h2 { font-size: clamp(1.6rem, 1.1rem + 2vw, 2.8rem); }
 .ruf p { margin-top: .7rem; color: var(--text-2); max-width: 38rem; }
 @media (max-width: 44rem) { .ruf { grid-template-columns: 1fr; } }
 
-/* ---------- Standortseite: Auftakt ---------- */
+/* ---------- Standortseite: Auftakt mit gebogenem Spiegel ---------- */
 
-.ort-auftakt { position: relative; isolation: isolate; overflow: clip; min-height: calc(100svh - var(--kopf)); display: grid; align-content: end; padding: clamp(1.5rem, 4vw, 3rem) 0 clamp(1.8rem, 4vw, 3rem); }
-.ort-bild { position: absolute; inset: 0; z-index: -2; }
-.ort-bild img { width: 100%; height: 100%; object-fit: cover; }
-@media (prefers-reduced-motion: no-preference) {
-  .js .ort-bild img { animation: heran 12s var(--kurve) both; }
-}
-@keyframes heran { from { transform: scale(1.1); } }
-.ort-auftakt::before { content: ''; position: absolute; inset: 0; z-index: -1;
-  background:
-    linear-gradient(180deg, rgb(5 5 7 / .55), transparent 22%, transparent 40%, rgb(5 5 7 / .82) 72%, var(--grund)),
-    linear-gradient(90deg, rgb(5 5 7 / .55), transparent 60%); }
-.ort-auftakt .riesen { position: relative; text-align: left; padding: 0; overflow: visible; font-size: clamp(3.4rem, 12vw, 14rem); margin: 0 0 clamp(1.2rem, 3vw, 2.2rem) -.04em; white-space: normal; }
-.ort-raster { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 1.6rem 0; align-items: end; }
-.ort-text { grid-column: 1 / span 3; display: grid; gap: 1.2rem; padding-right: 2rem; }
-.ort-text h1 { font-size: clamp(1.6rem, 1.1rem + 1.8vw, 2.6rem); letter-spacing: -.03em; font-weight: 500; }
+.ort-auftakt { position: relative; isolation: isolate; overflow: clip; padding: clamp(1.4rem, 3vw, 2.4rem) 0 clamp(2.5rem, 5vw, 4rem); }
+.ort-auftakt::before { content: ''; position: absolute; inset: -20% -10% auto 35%; height: 120%; z-index: -1; pointer-events: none;
+  background: radial-gradient(closest-side, rgb(63 130 255 / .2), transparent 75%); }
+.ort-raster { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); grid-template-rows: auto auto 1fr; align-items: start; }
+.ort-weg { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: space-between; gap: .6rem 2rem; margin-bottom: clamp(.6rem, 1.6vw, 1.2rem); }
+.ort-weg a { color: var(--text-2); text-decoration: none; }
+.ort-weg a:hover { color: var(--text); }
+.ort-raster > .riesen { grid-column: 1 / -1; grid-row: 2; position: relative; z-index: 3; padding: 0; margin: 0 0 0 -.04em; text-align: left; white-space: nowrap; overflow: visible;
+  font-size: clamp(3.4rem, 13vw, 15rem); pointer-events: none; }
+.ort-text { grid-column: 1 / span 3; grid-row: 3; display: grid; gap: 1.25rem; padding: clamp(1.2rem, 2.4vw, 2rem) 2.5rem 0 0; }
+.ort-text h1 { font-size: clamp(1.7rem, 1.1rem + 2vw, 2.9rem); letter-spacing: -.035em; font-weight: 500; }
 .ort-fakten { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1.4rem; }
 .ort-wertung { display: inline-flex; align-items: center; gap: .45rem; font-size: .88rem; color: var(--text-2); text-decoration: none; }
 .ort-wertung b { color: var(--text); font-weight: 500; }
 .ort-wertung .ico { color: var(--blau); }
-.ort-karte {  /* Glaskarte mit den wichtigsten Angaben */
-  grid-column: 5 / span 2; display: grid; gap: .9rem; padding: 1.3rem 1.4rem; border-radius: var(--rund);
-  background: var(--glas); border: 1px solid var(--linie-2); -webkit-backdrop-filter: blur(18px) saturate(1.3); backdrop-filter: blur(18px) saturate(1.3);
-  font-size: .9rem; color: var(--text-2);
-}
-.ort-karte b { color: var(--text); font-weight: 500; display: block; font-size: 1rem; }
-.ort-karte a { color: var(--text); font-variant-numeric: tabular-nums; }
-.ort-karte hr { border: 0; height: 1px; background: var(--linie-2); margin: 0; }
+.ort-daten { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: .8rem; border-top: 1px solid var(--linie-2); }
+.ort-daten > div { padding: 1rem 1rem 0 0; font-size: .88rem; color: var(--text-2); line-height: 1.45; }
+.ort-daten > div + div { padding-left: 1rem; border-left: 1px solid var(--linie); }
+.ort-daten dt { font-size: .66rem; letter-spacing: .22em; text-transform: uppercase; color: var(--text-3); margin-bottom: .45rem; }
+.ort-daten dd { margin: 0; color: var(--text); }
+.ort-daten a { color: var(--text); text-decoration: none; font-variant-numeric: tabular-nums; }
+.ort-spiegel { grid-column: 4 / span 3; grid-row: 2 / span 2; margin-top: clamp(.5rem, 1.5vw, 1.5rem); justify-self: end; width: min(100%, 32rem, calc((100svh - var(--kopf) - 9rem) * .8)); }
 @media (max-width: 52rem) {
-  .ort-auftakt { min-height: calc(100svh - var(--kopf)); }
-  .ort-raster { grid-template-columns: 1fr; }
-  .ort-text, .ort-karte { grid-column: 1; padding-right: 0; }
-  .ort-karte { display: none; }
+  .ort-raster { grid-template-columns: 1fr; grid-template-rows: none; }
+  .ort-raster > .riesen { grid-row: auto; font-size: clamp(3.2rem, 20vw, 8rem); white-space: normal; }
+  .ort-spiegel { grid-column: 1; grid-row: auto; margin: .6rem 0 0; width: 100%; justify-self: stretch; }
+  .ort-text { grid-column: 1; grid-row: auto; padding: 1.4rem 0 0; }
+  .ort-daten { grid-template-columns: 1fr 1fr; }
+  .ort-daten > div:nth-child(3) { grid-column: 1 / -1; border-left: 0; padding-left: 0; border-top: 1px solid var(--linie); margin-top: 1rem; }
 }
+
+/* Gebogener Spiegel (eine Karte des Rings, groß) */
+.bogen { position: relative; aspect-ratio: 4 / 5; }
+.bogen > img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--rund); box-shadow: 0 0 0 1px var(--linie-2); }
+.bogen-3d { perspective: var(--p, 1600px); perspective-origin: 50% 50%; }
+.bogen-3d > img { visibility: hidden; }
+.bogen-welt { position: absolute; left: 50%; top: 0; width: 0; height: 100%; transform-style: preserve-3d; opacity: 0; transition: opacity 1.2s var(--kurve); }
+.bogen.bereit .bogen-welt { opacity: 1; }
+.bogen .streifen { box-shadow: 0 -1.5px 0 var(--blau-hell), 0 1.5px 0 var(--blau), 0 -12px 28px -16px var(--blau), 0 14px 30px -16px var(--blau); }
+.bogen .streifen.erster { box-shadow: -1.5px 0 0 var(--blau-hell), 0 -1.5px 0 var(--blau-hell), 0 1.5px 0 var(--blau), -14px 0 30px -14px var(--blau); }
+.bogen .streifen.letzter { box-shadow: 1.5px 0 0 var(--blau-hell), 0 -1.5px 0 var(--blau-hell), 0 1.5px 0 var(--blau), 14px 0 30px -14px var(--blau); }
+.bogen-schein { position: absolute; left: 8%; right: 8%; bottom: -2.2rem; height: 2.4rem; border-radius: 50%; background: radial-gradient(closest-side, rgb(63 130 255 / .35), transparent); filter: blur(8px); pointer-events: none; }
+@media (max-width: 52rem) { .ort-spiegel .bogen { aspect-ratio: 4 / 4.4; } }
+
+/* Kapitelleiste: klebt unter dem Kopf, zeigt wo man ist */
+.kapitel-halter { position: sticky; top: var(--kopf); z-index: 50; background: rgb(5 5 7 / .86); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-block: 1px solid var(--linie); transition: top var(--t2) var(--kurve); }
+html.kopf-weg .kapitel-halter { top: 0; }
+.kapitel { display: flex; align-items: center; gap: .3rem; height: 3.2rem; overflow-x: auto; scrollbar-width: none; }
+.kapitel::-webkit-scrollbar { display: none; }
+.kapitel a { flex: none; display: inline-flex; align-items: center; gap: .5rem; height: 2.2rem; padding: 0 .85rem; border-radius: 999px; font-size: .8rem; letter-spacing: .04em; text-decoration: none; color: var(--text-2); transition: color var(--t1) var(--kurve), background-color var(--t1) var(--kurve); }
+.kapitel a small { font-size: .66rem; color: var(--text-3); letter-spacing: .1em; font-variant-numeric: tabular-nums; }
+.kapitel a.an { color: var(--text); background: rgb(63 130 255 / .16); box-shadow: inset 0 0 0 1px rgb(63 130 255 / .45); }
+.kapitel a.an small { color: var(--blau-hell); }
+@media (hover: hover) and (pointer: fine) { .kapitel a:not(.an):hover { color: var(--text); background: rgb(255 255 255 / .05); } }
+.kapitel .kapitel-termin { margin-left: auto; color: #fff; }
+@media (max-width: 52rem) { .kapitel .kapitel-termin { display: none; } }
+
+/* ---------- Übersicht: alle Salons auf einen Blick ---------- */
+
+.uebersicht { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--linie-2); }
+.uebersicht li { position: relative; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); align-items: center; gap: .6rem 0; padding: 1.25rem 0; border-bottom: 1px solid var(--linie-2); }
+.uebersicht li::before { content: ''; position: absolute; left: 0; bottom: -1px; height: 1px; width: 100%; background: var(--neon); transform: scaleX(0); transform-origin: 0 50%; transition: transform .8s var(--kurve-weich); box-shadow: 0 0 12px var(--neon-schein); }
+@media (hover: hover) and (pointer: fine) { .uebersicht li:hover::before { transform: none; } }
+.ue-name { grid-column: 1 / span 2; display: flex; align-items: baseline; gap: 1rem; padding-right: 1rem; }
+.ue-name .nr { font-size: .7rem; letter-spacing: .14em; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.ue-name a { font-size: clamp(1.15rem, 1rem + .6vw, 1.5rem); font-weight: 500; letter-spacing: -.02em; text-decoration: none; }
+.ue-name small { display: block; font-size: .7rem; letter-spacing: .2em; text-transform: uppercase; color: var(--text-3); margin-top: .3rem; }
+.ue-adresse { grid-column: 3; font-size: .9rem; color: var(--text-2); padding-right: 1rem; }
+.ue-stand { grid-column: 4; }
+.ue-tel { grid-column: 5; font-size: .92rem; font-variant-numeric: tabular-nums; }
+.ue-tel a { text-decoration: none; color: var(--text); }
+.ue-tun { grid-column: 6; justify-self: end; }
+@media (max-width: 64rem) {
+  .uebersicht li { grid-template-columns: minmax(0, 1fr) auto; padding: 1.1rem 0; }
+  .ue-name { grid-column: 1; }
+  .ue-tun { grid-column: 2; grid-row: 1 / span 3; align-self: center; }
+  .ue-adresse, .ue-stand, .ue-tel { grid-column: 1; padding-left: 2.2rem; }
+}
+@media (max-width: 30rem) { .ue-tun .knopf { padding: 0 .9rem; } .ue-tun .knopf span { display: none; } }
 
 /* ---------- Preisliste: fragen statt alles zeigen ---------- */
 
 .preise-raster { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0; align-items: start; }
 .preise-seite { grid-column: 1 / span 2; position: sticky; top: calc(var(--kopf) + 1.5rem); display: grid; gap: 1.3rem; padding-right: 2rem; }
 .preise-seite .klein { font-size: .84rem; color: var(--text-3); }
-.gruppen { grid-column: 3 / span 4; display: grid; gap: 1rem; }
+.gruppen { grid-column: 3 / span 4; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; align-items: start; }
+@media (max-width: 72rem) { .gruppen { grid-template-columns: 1fr; } }
 .wahl { border: 0; margin: 0; padding: 0; min-width: 0; }
 .wahl legend { float: left; width: 100%; padding: 0; margin-bottom: .9rem; font-size: .72rem; font-weight: 500; letter-spacing: .22em; text-transform: uppercase; color: var(--text-2); }
 .wahl-reihe { clear: both; display: flex; flex-wrap: wrap; gap: .5rem; }
@@ -520,8 +582,7 @@ main, .fuss { position: relative; z-index: 2; }
 @media (prefers-reduced-motion: no-preference) { .gruppe { animation: hoch .55s var(--kurve-weich) both; } }
 @media (max-width: 52rem) {
   .preise-raster { grid-template-columns: 1fr; }
-  .preise-seite { grid-column: 1; position: sticky; top: calc(var(--kopf) - 1px); z-index: 30; margin-inline: calc(-1 * var(--rand)); padding: .75rem var(--rand); background: var(--grund); border-bottom: 1px solid var(--linie-2); transition: transform var(--t2) var(--kurve); }
-  html.kopf-weg .preise-seite { transform: translateY(calc(-1 * var(--kopf) + 1px)); }
+  .preise-seite { grid-column: 1; position: static; padding: 0; }
   .preise-seite .klein, .preise-seite .wahl legend { display: none; }
   .wahl-reihe { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: calc(-1 * var(--rand)); padding-inline: var(--rand); }
   .wahl-reihe::-webkit-scrollbar { display: none; }
@@ -552,7 +613,7 @@ main, .fuss { position: relative; z-index: 2; }
   content: ''; position: absolute; inset: 0; z-index: -1; mix-blend-mode: color-dodge; opacity: .55;
   background:
     radial-gradient(circle at var(--mx) var(--my), rgb(255 255 255 / .35), transparent 38%),
-    repeating-linear-gradient(115deg, #5b8cff 0%, #9d6bff 7%, #ff5fd2 14%, #7ef0b0 21%, #5b8cff 28%);
+    repeating-linear-gradient(115deg, #1747c9 0%, #3f82ff 7%, #d9e7ff 12%, #8fbaff 18%, #1747c9 28%);
   background-size: 100% 100%, 300% 300%;
   background-position: center, calc(var(--mx) * 1.2) calc(var(--my) * 1.2);
   -webkit-mask: radial-gradient(130% 100% at var(--mx) var(--my), #000, transparent 70%);
@@ -585,11 +646,13 @@ main, .fuss { position: relative; z-index: 2; }
 .galerie img { width: 100%; height: 100%; object-fit: cover; transition: transform 1.4s var(--kurve-weich); }
 .galerie button.breit { grid-column: span 8; }
 .galerie button.hoch { grid-row: span 2; }
+.galerie button.voll { grid-column: 1 / -1; grid-row: span 2; }
+.galerie button.band { grid-column: 1 / -1; }
 @media (hover: hover) and (pointer: fine) { .galerie button:hover img { transform: scale(1.04); } }
 @media (max-width: 40rem) {
   .galerie { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 42vw; gap: .5rem; }
   .galerie button, .galerie button.breit { grid-column: span 1; }
-  .galerie button.breit { grid-column: span 2; }
+  .galerie button.breit, .galerie button.band, .galerie button.voll { grid-column: span 2; }
 }
 
 .gross { width: min(100vw - 2 * var(--rand), 1200px); max-width: none; max-height: 92svh; padding: 0; border: 0; overflow: visible; background: transparent; color: var(--text); }
@@ -694,7 +757,7 @@ main, .fuss { position: relative; z-index: 2; }
 .recht p, .recht li { color: var(--text-2); }
 .recht p + p { margin-top: .9rem; }
 .recht a { color: var(--text); }
-.offen-markierung { display: inline-block; padding: .05rem .5rem; border-radius: 6px; font-size: .8em; font-weight: 500; background: rgb(157 107 255 / .2); color: #cbb6ff; }
+.offen-markierung { display: inline-block; padding: .05rem .5rem; border-radius: 6px; font-size: .8em; font-weight: 500; background: rgb(63 130 255 / .2); color: var(--blau-hell); }
 
 /* ---------- Auftritt ---------- */
 
@@ -706,8 +769,7 @@ main, .fuss { position: relative; z-index: 2; }
   .js .auftakt-text > :nth-child(3), .js .ort-text > :nth-child(3) { animation-delay: .16s; }
   .js .auftakt-text > :nth-child(n+4), .js .ort-text > :nth-child(n+4) { animation-delay: .24s; }
   .js .auftakt-staende, .js .ort-karte { animation-delay: .32s; }
-  .js .riesen .b { animation: buchstabe 1.4s var(--kurve-weich) backwards; animation-delay: calc(var(--b) * 45ms + .1s); }
-}
+  }
 @keyframes buchstabe { from { opacity: 0; transform: translateY(.35em) rotateX(-60deg); filter: blur(8px); } }
 
 @media print { .kopf, .aktion, .raster, .auftakt-3d, .karte-hier { display: none !important; } body { background: #fff; color: #000; } }

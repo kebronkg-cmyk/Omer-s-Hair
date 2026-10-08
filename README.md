@@ -34,7 +34,9 @@ Lokal ansehen: `npx serve .` und `http://localhost:3000` öffnen.
 ## Funktionen
 
 - **3D-Auftakt** (Startseite): fließende Haarsträhnen aus Chrom mit Neon-Spiegelungen (three.js, lokal gebündelt in `assets/js/hero3d.js`, Quelle `tools/hero3d.src.js`). Folgt Maus und Scrollen, pausiert außerhalb des Bildes; Standbild als Rückfall ohne WebGL.
-- **Salon-Ring**: die fünf Salons als gebogene Karten auf einem Zylinder (CSS 3D, jede Karte aus 9–14 Streifen). Dreht sich beim Hereinscrollen langsam herein; ziehen, wischen, Pfeiltasten oder Klick auf eine Seitenkarte drehen, Klick auf die mittlere öffnet den Salon. Ohne Skript: wischbare Reihe.
+- **Salon-Ring**: die fünf Salons als gebogene Karten auf einem Zylinder (CSS 3D, jede Karte aus 9–14 Streifen). Dreht sich beim Hereinscrollen herein und danach langsam von allein; Berühren, Ziehen, Wischen, Pfeiltasten oder Maus darüber pausieren. Knopf zum Anhalten. Klick auf eine Seitenkarte dreht sie nach vorn, Klick auf die mittlere öffnet den Salon. Ohne Skript: wischbare Reihe.
+- **Auf einen Blick**: alle Salons mit Adresse, Live-Status, Telefon und Buchung in einer Liste
+- **Standortseiten**: Name groß in Chrom, gebogener Spiegel mit dem besten Foto, Eckdaten in drei Spalten, Kapitelleiste (Preise · Salon · Fan Card · Stimmen · Anfahrt), die mitläuft
 - **Nächsten Salon finden**: Standort wird nur im Browser verglichen, der Ring dreht zum nächsten Salon und zeigt die Entfernung
 - **Live-Öffnungsstand** nach Münchner Uhr, „5/5 Salons jetzt geöffnet“ im ersten Bildschirm
 - **Preisliste mit Filter** ohne Skript über `:has()`, Wahl wird gemerkt; direkt ansteuerbar mit `/mira/?art=herren`
@@ -45,7 +47,13 @@ Lokal ansehen: `npx serve .` und `http://localhost:3000` öffnen.
 
 ## Bilder
 
-Salonfotos MIRA und Isartor in Originalgröße aus den Planity-Einträgen der Salons (vom Inhaber hochgeladen), Barber Shop von der alten Website (nur 900 px). Für Bogenhausen und Riem gibt es noch keine Innenaufnahmen – dort stehen gestaltete Schriftkarten (`tools/karte.html`), bis Fotos kommen.
+Ausgewählt und einheitlich bearbeitet mit `tools/bilder.py` (kühles Weiß, tiefe Schwarztöne, Lila und Magenta entsättigt, Blau in den Schatten, Schärfe; die älteren 900-px-Fotos werden hochgerechnet, nachgeschärft und mit feinem Korn versehen):
+
+```sh
+python3 tools/bilder.py <ordner-mit-originalen>
+```
+
+Quellen: MIRA und Isartor in Originalgröße aus den Planity-Einträgen der Salons, Barber Shop und Isartor-Innenräume von der alten Website (900 px). Für Bogenhausen und Riem gibt es noch keine Innenaufnahmen – dort stehen Schriftkarten (`tools/karte.html`), bis Fotos kommen.
 
 ## Vor dem Livegang
 

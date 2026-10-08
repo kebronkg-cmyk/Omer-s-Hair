@@ -26,14 +26,14 @@ function umgebung(renderer) {
     const m = new Mesh(new PlaneGeometry(b, h), new MeshBasicMaterial({ color: new Color(farbe).multiplyScalar(staerke) }));
     m.position.set(x, y, z); m.rotation.set(rx, ry, 0); raum.add(m);
   };
-  leiste('#5b8cff', -9, 2, -6, 3.2, 18, 0.6, 0, 5.0);
-  leiste('#9d6bff', 9, -1, -5, 3.4, 16, -0.6, 0, 4.4);
-  leiste('#ff5fd2', 0, -9, 4, 20, 2.6, 0, -1.2, 3.4);
+  leiste('#3f82ff', -9, 2, -6, 4.2, 18, 0.6, 0, 8.0);
+  leiste('#2a6bff', 9, -1, -5, 4.4, 16, -0.6, 0, 7.0);
+  leiste('#3f82ff', 0, -9, 4, 20, 3.4, 0, -1.2, 5.0);
   leiste('#ffffff', 0, 11, 0, 16, 5, 0, 1.5, 4.2);
   leiste('#ffffff', -12, 0, 6, 1.6, 18, 1.4, 0, 3.0);
-  leiste('#5b8cff', 12, 4, 8, 1.2, 14, -1.6, 0, 3.6);
+  leiste('#3f82ff', 12, 4, 8, 1.2, 14, -1.6, 0, 3.8);
   leiste('#ffffff', 4, -3, 13, 3, 10, Math.PI, 0, 2.4);
-  leiste('#c8d4ff', 0, 0, 14, 22, 0.8, Math.PI, 0, 2.0);
+  leiste('#d9e7ff', 0, 0, 14, 22, 0.8, Math.PI, 0, 2.0);
   const pmrem = new PMREMGenerator(renderer);
   const env = pmrem.fromScene(raum, 0.03).texture;
   pmrem.dispose();
@@ -91,7 +91,7 @@ function start() {
   const stoff = (farbe, irisierend) => {
     const m = new MeshPhysicalMaterial({
       color: farbe, metalness: 1, roughness: 0.06, clearcoat: 1, clearcoatRoughness: 0.05,
-      iridescence: irisierend, iridescenceIOR: 1.55, iridescenceThicknessRange: [180, 720], envMapIntensity: 1.35,
+      envMapIntensity: 1.4 + irisierend * 0.2,
     });
     // Strähnen wogen: Verschiebung quer zur Laufrichtung, weich und langsam
     m.onBeforeCompile = (s) => {
@@ -123,7 +123,7 @@ function start() {
     ];
     const kurve = new CatmullRomCurve3(pts, false, 'catmullrom', 0.5);
     const r = 0.26 + (1 - Math.abs(f) * 1.3) * 0.14 + (i % 3 === 0 ? 0.08 : 0);
-    const farbe = i % 4 === 1 ? '#c9d6ff' : i % 4 === 3 ? '#e7d9ff' : '#ffffff';
+    const farbe = i % 4 === 1 ? '#5f93ff' : i % 4 === 3 ? '#a8c6ff' : '#ffffff';
     gruppe.add(new Mesh(straehne(kurve, r, segmente, rund), stoff(farbe, i % 2 ? 1 : 0.6)));
   }
   gruppe.rotation.set(0.12, -0.18, -0.08);
