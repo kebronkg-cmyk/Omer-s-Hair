@@ -8,13 +8,14 @@ keine Cookies, keine externen Schriften.
 | Pfad | Inhalt |
 |---|---|
 | `/` | Startseite: die fünf Salons als Spiegelreihe, „Nächsten Salon finden“, Handwerk, Bewertungen, Instagram, Bewerbung |
-| `/mira/` | **Salon MIRA**, komplett: Preisliste mit Filter, Fan Card, Galerie, Bewertungen, Anfahrt mit Etagenanzeige |
+| `/mira/` | **Salon MIRA**, komplett: Preis-Studio, Fan Card, Galerie, Bewertungen, Anfahrt mit Etagenanzeige |
 | `/barber-mira/` | Barber Shop MIRA: Grundgerüst (Kontakt, Zeiten, Galerie), Preise folgen |
 | `/isartor/` | Salon Isartor: Grundgerüst mit Planity-Buchung, Preise folgen |
+| `/riem/` | Salon Riem Arcaden: Ladenfront, Galerie, Stadtplan, Buchung über omers-hair.de |
 | `/impressum/`, `/datenschutz/` | Rechtstexte, Platzhalter sind gelb markiert |
 | `/404.html` | Fehlerseite |
 
-Bogenhausen und Riem Arcaden verlinken vorerst auf omers-hair.de.
+Bogenhausen verlinkt vorerst auf omers-hair.de.
 
 ## Bearbeiten
 
@@ -33,17 +34,17 @@ Lokal ansehen: `npx serve .` und `http://localhost:3000` öffnen.
 
 ## Funktionen
 
-- **3D-Auftakt** (Startseite): fließende Haarsträhnen aus Chrom mit Neon-Spiegelungen (three.js, lokal gebündelt in `assets/js/hero3d.js`, Quelle `tools/hero3d.src.js`). Folgt Maus und Scrollen, pausiert außerhalb des Bildes; Standbild als Rückfall ohne WebGL.
+- **Glas-Schrift** (Startseite und Standortseiten): Namen als räumliche Glasbuchstaben mit blau leuchtenden Kanten, auf den Standortseiten vor der Ladenfront (three.js, lokal gebündelt in `assets/js/glas3d.js`, Quelle `tools/glas3d.src.js`, Buchstabenformen in `tools/glyphen.json`). Folgt Maus und Scrollen, pausiert außerhalb des Bildes; Chrom-Schrift als Rückfall ohne WebGL.
 - **Salon-Ring**: die Ladenfronten der fünf Salons als gebogene Karten auf einem Zylinder. Dreht sich von allein (3,4 s je Karte); nur Antippen oder Ziehen hält ihn kurz an. Klick auf eine Seitenkarte dreht sie nach vorn, Klick auf die mittlere öffnet den Salon.
 - **Auf einen Blick**: alle Salons mit Adresse, Live-Status, Telefon und Buchung in einer Liste
-- **Standortseiten**: Name groß in Chrom, gebogener Spiegel mit dem besten Foto, Eckdaten in drei Spalten, Kapitelleiste (Preise · Salon · Fan Card · Stimmen · Anfahrt), die mitläuft
+- **Standortseiten**: Ladenfront ganz oben mit Glas-Schrift, darunter kompakte Leiste mit Buchen, Anrufen, Route; Kapitelleiste, die mitläuft
 - **Nächsten Salon finden**: Standort wird nur im Browser verglichen, der Ring dreht zum nächsten Salon und zeigt die Entfernung
 - **Live-Öffnungsstand** nach Münchner Uhr, „5/5 Salons jetzt geöffnet“ im ersten Bildschirm
-- **Preisliste** als Akkordeon mit Sprungleiste, immer nur eine Gruppe offen; direkt ansteuerbar mit `/mira/#art-herren`
+- **Preis-Studio** (MIRA): Reiter mit Lichtschieber, große Ab-Preise in Chrom, Leistungen antippen ergibt einen Richtwert für den Termin, direkt weiter zu Planity
 - **Stadtpläne** selbst gerendert aus OpenStreetMap (`tools/karten.py`): leuchtend blaue Straßen, sofort sichtbar, kein Kartendienst beim Besuch
 - **Fan Card** mit Hologramm-Folie, die Finger bzw. Maus folgt, und Stempeln beim Hereinscrollen
 - **Etagenanzeige** UG/EG für Salon und Barber im MIRA, **Aktionsleiste am Handy** (Buchen · Anrufen · Route)
-- **Galerie** mit Blättern (Pfeiltasten, Wischen)
+- **Galerie** gleichmäßig im Raster je nach Bildanzahl, mit Blättern (Pfeiltasten, Wischen)
 - Alles mit reduzierter Bewegung und ohne Skript bedienbar; schema.org `HairSalon` je Standort
 
 ## Bilder
@@ -66,7 +67,7 @@ Offene Punkte beim Kunden:
 - [ ] Barber Shop: Etage (EG?), Telefon (089 54 80 56 05?) und Preise bestätigen
 - [ ] Preisliste Isartor
 - [ ] Team-Fotos und Namen, ein Porträt des Inhabers für die Startseite
-- [ ] Fotos in Originalgröße (die alte Website hat nur 900 px), Ladenfront Riem Arcaden
+- [ ] Fotos in Originalgröße (die alte Website hat nur 900 px)
 - [ ] Gilt die Fan Card in allen Salons oder nur im MIRA?
 - [ ] Gehören alle fünf Betriebe zur GmbH, oder läuft Riem separat?
 - [ ] Doppelten Planity-Eintrag des MIRA bereinigen

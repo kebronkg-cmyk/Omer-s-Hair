@@ -121,9 +121,11 @@
     const masse = () => {
       const vw = liste.clientWidth || innerWidth;
       const schmal = vw < 760;
-      W = schmal ? Math.min(vw * 0.74, 400) : klemmen(vw * 0.33, 340, 520);
-      const H = Math.min(W * 1.25, innerHeight * (schmal ? 0.56 : 0.6));
-      R = W * (schmal ? 1.45 : 1.7);
+      // Karten im Format der Ladenfronten (4:3), damit nichts angeschnitten wird
+      const SEITE = 4 / 3;
+      W = schmal ? Math.min(vw * 0.84, 460) : klemmen(vw * 0.4, 380, 640);
+      const H = Math.min(W / SEITE, innerHeight * (schmal ? 0.5 : 0.6));
+      R = W * (schmal ? 1.3 : 1.55);
       const neuK = schmal ? 9 : 14;
       const theta = W / R, delta = theta / neuK;
       const sw = 2 * R * Math.tan(delta / 2);
@@ -131,7 +133,7 @@
       schritt = theta + abstandPx / R;
       // Bild wie object-fit: cover (Bilder sind 4:5)
       let bgw, bgh, ox = 0, oy = 0;
-      if (W / H > 0.8) { bgw = W; bgh = W / 0.8; oy = (H - bgh) / 2; } else { bgh = H; bgw = H * 0.8; ox = (W - bgw) / 2; }
+      if (W / H > SEITE) { bgw = W; bgh = W / SEITE; oy = (H - bgh) / 2; } else { bgh = H; bgw = H * SEITE; ox = (W - bgw) / 2; }
       const s = liste.style;
       s.setProperty('--kh', H.toFixed(1) + 'px');
       s.setProperty('--r', R.toFixed(1) + 'px');
@@ -456,27 +458,64 @@
     document.querySelectorAll('.trenner').forEach((t) => b.observe(t));
   }
 
-  /* ---------- Preisliste: Sprungleiste öffnet die passende Gruppe ---------- */
-  const preise = document.querySelector('.preise');
-  if (preise) {
-    const gruppen = [...preise.querySelectorAll('details.gruppe')];
-    const links = [...preise.querySelectorAll('[data-oeffne]')];
-    const markieren = () => links.forEach((a) => a.classList.toggle('an', document.getElementById(a.dataset.oeffne)?.open));
-    const oeffnen = (id, rollen) => {
-      const g = document.getElementById(id); if (!g) return;
-      gruppen.forEach((x) => { if (x !== g) x.open = false; });   // für Browser ohne <details name>
-      g.open = true; markieren(); merken('preis-art', id);
-      if (rollen) requestAnimationFrame(() => g.scrollIntoView({ behavior: ruhig ? 'auto' : 'smooth', block: 'nearest' }));
+  /* ---------- Preis-Studio: Reiter, Auswahl, Summe ---------- */
+  const studio = document.querySelector('.preis-studio');
+  if (studio) {
+    studio.classList.add('ps-an');
+    const reiter = [...studio.querySelectorAll('[data-reiter]')];
+    const tafeln = [...studio.querySelectorAll('.ps-tafel')];
+    const licht = studio.querySelector('.ps-licht');
+    const leiste = studio.querySelector('.ps-reiter-leiste');
+    const lichtSetzen = (r) => {
+      if (!licht || !r) return;
+      licht.style.setProperty('--x', r.offsetLeft + 'px');
+      licht.style.setProperty('--b', r.offsetWidth + 'px');
     };
-    links.forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); oeffnen(a.dataset.oeffne, true); history.replaceState(null, '', '#' + a.dataset.oeffne); }));
-    gruppen.forEach((g) => g.addEventListener('toggle', () => {
-      if (g.open) { gruppen.forEach((x) => { if (x !== g) x.open = false; }); merken('preis-art', g.id); }
-      markieren();
-    }));
-    const art = new URLSearchParams(location.search).get('art');
-    const start = location.hash.startsWith('#art-') ? location.hash.slice(1) : art ? 'art-' + art : holen('preis-art');
-    if (start && document.getElementById(start)) oeffnen(start, location.hash.startsWith('#art-') || !!art);
-    markieren();
+    const zeigen = (k, merk = true) => {
+      reiter.forEach((r) => { const an = r.dataset.reiter === k; r.setAttribute('aria-selected', String(an)); r.tabIndex = an ? 0 : -1; if (an) lichtSetzen(r); });
+      tafeln.forEach((tf) => { tf.hidden = tf.id !== 'art-' + k; });
+      if (merk) merken('preis-art', k);
+      const aktiv = reiter.find((r) => r.dataset.reiter === k);
+      if (aktiv && leiste.scrollWidth > leiste.clientWidth) leiste.scrollTo({ left: aktiv.offsetLeft - 16, behavior: ruhig ? 'auto' : 'smooth' });
+    };
+    reiter.forEach((r, i) => {
+      r.addEventListener('click', (e) => { e.preventDefault(); zeigen(r.dataset.reiter); });
+      r.addEventListener('keydown', (e) => {
+        const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0; if (!d) return;
+        e.preventDefault(); const n = reiter[(i + d + reiter.length) % reiter.length]; n.focus(); zeigen(n.dataset.reiter);
+      });
+    });
+    const start = (location.hash.startsWith('#art-') && location.hash.slice(5)) || new URLSearchParams(location.search).get('art') || holen('preis-art') || reiter[0]?.dataset.reiter;
+    zeigen(reiter.some((r) => r.dataset.reiter === start) ? start : reiter[0].dataset.reiter, false);
+    new ResizeObserver(() => lichtSetzen(reiter.find((r) => r.getAttribute('aria-selected') === 'true'))).observe(leiste);
+
+    // Auswahl und Summe
+    const summe = studio.querySelector('[data-summe]');
+    const auswahl = studio.querySelector('[data-auswahl]');
+    const leeren = studio.querySelector('[data-leeren]');
+    const box = studio.querySelector('.ps-summe');
+    const rechnen = () => {
+      const gew = [...studio.querySelectorAll('.ps-leistung[aria-pressed="true"]')];
+      let min = 0, max = 0, offen = false, anfrage = false;
+      for (const g of gew) {
+        const a = g.dataset.min, b = g.dataset.max;
+        if (!a) { anfrage = true; continue; }
+        min += +a; if (b) max += +b; else { max += +a; offen = true; }
+      }
+      box.classList.toggle('voll', gew.length > 0);
+      leeren.hidden = !gew.length;
+      if (!gew.length) { summe.textContent = 'Tippen Sie Leistungen an'; auswahl.textContent = ''; return; }
+      const preis = min === max ? (offen ? 'ab ' : '') + min + ' €' : (offen ? 'ab ' + min + ' €' : min + ' bis ' + max + ' €');
+      summe.innerHTML = '<b>' + (min ? preis : 'Preis auf Anfrage') + '</b>' + (anfrage && min ? ' <small>plus Leistung auf Anfrage</small>' : '');
+      auswahl.textContent = gew.length + (gew.length === 1 ? ' Leistung: ' : ' Leistungen: ') + gew.map((g) => g.dataset.name).join(', ');
+      if (!ruhig) { summe.classList.remove('puls'); void summe.offsetWidth; summe.classList.add('puls'); }
+    };
+    studio.addEventListener('click', (e) => {
+      const l = e.target.closest('.ps-leistung'); if (!l) return;
+      l.setAttribute('aria-pressed', String(l.getAttribute('aria-pressed') !== 'true')); rechnen();
+    });
+    leeren.addEventListener('click', () => { studio.querySelectorAll('.ps-leistung[aria-pressed="true"]').forEach((l) => l.setAttribute('aria-pressed', 'false')); rechnen(); });
+    rechnen();
   }
 
   /* ---------- Fan Card: stanzt sich selbst, Hologramm folgt dem Finger ---------- */

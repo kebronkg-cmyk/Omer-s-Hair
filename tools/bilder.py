@@ -31,6 +31,8 @@ QUELLEN = {
     'mira-wasch': 'Omers-Hair-Mira-01.jpg', 'mira-empfang': 'Omers-Hair-Mira-02.jpg',
     'b-front': 'Barber-Shop-im-Mira-3.jpg', 'b-stuehle': 'Barber-Shop-im-Mira-1.jpg', 'b-raum': 'Barber-Shop-im-Mira-2.jpg',
     'bo-front': 'Omers-Hair-Richard-Strauss-Str-D.jpg', 'ri-tresen': 'Omers-Hair-Riem-Arcaden-05.jpg',
+    'ri-front': 'riem-front.png',   # Foto vom Kunden (Google), Ladenfront Riem Arcaden
+    **{f'ri-{i}': f'Omers-Hair-Riem-Arcaden-0{i}.jpg' for i in range(1, 6)},
     # Website, 1600 px
     'i-raum': 'PHOTO-2024-09-11-11-04-29-2.jpg', 'i-boegen': 'PHOTO-2024-09-11-11-04-31-5.jpg', 'i-gang': 'PHOTO-2024-09-11-11-04-31.jpg',
 }
@@ -135,38 +137,55 @@ def ohne_zeichen(im):
     return im.crop((0, 0, im.width, round(im.height * 0.875)))
 
 
+def retusche(im, box, dx):
+    """Wasserzeichen übermalen statt wegschneiden: Fläche daneben (um dx verschoben) weich einblenden."""
+    im = im.copy()
+    x1, y1, x2, y2 = box
+    flick = im.crop((x1 - dx, y1, x2 - dx, y2))
+    maske = Image.new('L', flick.size, 0)
+    from PIL import ImageDraw
+    ImageDraw.Draw(maske).rectangle((8, 8, flick.width - 8, flick.height - 8), fill=255)
+    im.paste(flick, (x1, y1), maske.filter(ImageFilter.GaussianBlur(6)))
+    return im
+
+
+def front(im, ratio=4 / 3, fx=0.5, fy=0.5, breite=1600):
+    """Ladenfront: ganzes Bild, nur auf 4:3 gebracht, natürliche Helligkeit, behutsam hochgerechnet."""
+    im = auf_format(im, ratio, fx, fy)
+    if im.width < breite:
+        im = schwach_aufwerten(im, breite)
+    return look(im, kontrast=1.08, nacht=0.22)
+
+
 def main(quelle: Path):
     lade = lambda k: ImageOps.exif_transpose(Image.open(quelle / QUELLEN[k])).convert('RGB')
     klein = lambda im, b: schwach_aufwerten(im, b)
 
-    # Ring: Ladenfronten (4:5), nachts gegradet
-    schreiben(look(klein(lade('mira-front').crop((300, 0, 748, 536)).crop((0, 0, 428, 535)), 1000), kontrast=1.25, nacht=1), 'front-mira', (640, 1000))
-    schreiben(look(klein(lade('b-front').crop((215, 0, 643, 535)), 1000), kontrast=1.25, nacht=1), 'front-barber', (640, 1000))
-    schreiben(look(auf_format(lade('neon'), 0.8, 0.5, 0.3), kontrast=1.15, nacht=0.8), 'front-isartor', (640, 1200))
-    schreiben(look(klein(lade('bo-front').crop((470, 0, 898, 535)), 1000), kontrast=1.2, nacht=0.6), 'front-bogenhausen', (640, 1000))
-    schreiben(look(klein(lade('ri-tresen').crop((0, 60, 428, 595)), 1000), kontrast=1.2, nacht=1), 'front-riem', (640, 1000))
+    # Ladenfronten (Ring und oberstes Bild der Salonseiten), 4:3, ganz sichtbar
+    schreiben(front(retusche(lade('mira-front'), (700, 525, 900, 600), 230), fx=0.6), 'front-mira', (800, 1600))
+    schreiben(front(retusche(lade('b-front'), (690, 520, 900, 600), 240), fx=0.5), 'front-barber', (800, 1600))
+    schreiben(front(retusche(lade('bo-front'), (700, 525, 900, 600), 240), fx=0.75), 'front-bogenhausen', (800, 1600))
+    schreiben(front(lade('ri-front'), fy=0.4), 'front-riem', (800, 1600))
+    schreiben(front(lade('neon'), fy=0.28), 'front-isartor', (800, 1600))
 
-    # Spiegel der Standortseiten (4:5), die schärfsten Fotos
-    schreiben(look(auf_format(lade('m5'), 0.8, 0.42), kontrast=1.1, nacht=0.35), 'ort-mira', (700, 1400))
-    schreiben(look(auf_format(lade('i-boegen'), 0.8, 0.5, 0.35), kontrast=1.15, nacht=0.35), 'ort-isartor', (700, 1200))
-    schreiben(look(klein(auf_format(ohne_zeichen(lade('b-stuehle')), 0.8, 0.3), 1000), kontrast=1.2, nacht=0.45), 'ort-barber', (640, 1000))
+    # Galerie MIRA: drei Fotos
+    for k, n in (('mira-reihe', 'mira-reihe'), ('mira-wasch', 'mira-wasch')):
+        schreiben(look(klein(auf_format(ohne_zeichen(lade(k)), 3 / 2), 1500), kontrast=1.12), n, (900, 1500))
+    schreiben(look(auf_format(lade('m8'), 3 / 2)), 'mira-herren', (900, 1800))
 
-    # Galerie MIRA
-    schreiben(look(klein(ohne_zeichen(lade('mira-lang')), 1500), kontrast=1.15), 'mira-lang', (900, 1500))
-    schreiben(look(klein(ohne_zeichen(lade('mira-reihe')), 1500), kontrast=1.15), 'mira-reihe', (900, 1500))
-    schreiben(look(klein(ohne_zeichen(lade('mira-wasch')), 1500), kontrast=1.15), 'mira-wasch', (900, 1500))
-    schreiben(look(auf_format(lade('m10'), 0.8, 0.78)), 'mira-stuhl', (700, 1400))
-    schreiben(look(lade('m8')), 'mira-herren', (900, 1800))
-    schreiben(look(auf_format(lade('m2'), 0.8, 0.3)), 'mira-werkzeug', (700, 1400))
+    # Galerie Isartor
+    schreiben(look(auf_format(lade('i-raum'), 3 / 2), kontrast=1.1), 'isartor-raum', (900, 1600))
+    schreiben(look(auf_format(lade('i-gang'), 3 / 2), kontrast=1.1), 'isartor-gang', (900, 1600))
+    schreiben(look(auf_format(lade('i-boegen'), 3 / 2, fy=0.45), kontrast=1.1), 'isartor-boegen', (900, 1200))
 
-    # Galerie Isartor (1600 px)
-    schreiben(look(lade('i-raum'), kontrast=1.1), 'isartor-raum', (900, 1600))
-    schreiben(look(lade('i-gang'), kontrast=1.1), 'isartor-gang', (900, 1600))
-    schreiben(look(lade('i-boegen'), kontrast=1.1), 'isartor-boegen', (700, 1200))
+    # Galerie Barber: das bessere Foto
+    schreiben(look(klein(auf_format(ohne_zeichen(lade('b-stuehle')), 3 / 2), 1500), kontrast=1.15), 'barber-stuehle', (900, 1500))
 
-    # Galerie Barber
-    schreiben(look(klein(ohne_zeichen(lade('b-raum')), 1500), kontrast=1.2), 'barber-raum', (900, 1500))
-    schreiben(look(klein(ohne_zeichen(lade('b-stuehle')), 1500), kontrast=1.2), 'barber-stuehle', (900, 1500))
+    # Galerie Riem: alle fünf, Logo oben rechts weggeschnitten
+    for i in range(1, 6):
+        im = lade(f'ri-{i}')
+        im = im.crop((0, round(im.height * 0.13), im.width, im.height))   # Logo-Streifen oben
+        schreiben(look(klein(auf_format(im, 3 / 2), 1500), kontrast=1.1), f'riem-{i}', (900, 1500))
 
 
 if __name__ == '__main__':
