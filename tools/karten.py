@@ -26,7 +26,6 @@ OVERPASS = ['https://maps.mail.ru/osm/tools/overpass/api/interpreter', 'https://
 ORTE = {
     'mira': (48.2132741, 11.5632254, 900),
     'isartor': (48.1335879, 11.5839159, 750),
-    'riem': (48.1320182, 11.6916357, 850),
     'muenchen': (48.1730, 11.6270, 7800),   # Übersicht aller Salons
 }
 SEITE = 1.25   # Höhe = Breite / SEITE  (Querformat 5:4)

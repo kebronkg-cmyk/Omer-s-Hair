@@ -181,8 +181,8 @@ def main(quelle: Path):
     # Galerie Barber: das bessere Foto
     schreiben(look(klein(auf_format(ohne_zeichen(lade('b-stuehle')), 3 / 2), 1500), kontrast=1.15), 'barber-stuehle', (900, 1500))
 
-    # Galerie Riem: alle fünf, Logo oben rechts weggeschnitten
-    for i in range(1, 6):
+    # Riem: vorerst nur ein Bild für die Instagram-Kachel; die Seite folgt später (dann range(1, 6))
+    for i in (3,):
         im = lade(f'ri-{i}')
         im = im.crop((0, round(im.height * 0.13), im.width, im.height))   # Logo-Streifen oben
         schreiben(look(klein(auf_format(im, 3 / 2), 1500), kontrast=1.1), f'riem-{i}', (900, 1500))

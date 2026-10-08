@@ -8,6 +8,61 @@
 
   const ruhig = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const feinZeiger = matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+  /* ---------- Ladevorhang: zählt echten Fortschritt (Schrift, erstes Bild, 3D), dann heben sich die Spalten ---------- */
+  if (doc.dataset.vorhang === 'zu') {
+    const kurz = doc.dataset.vorhangArt === 'kurz';
+    const zahl = document.querySelector('.vorhang-zahl');
+    const beginn = performance.now();
+    const MIN = kurz ? 200 : 1400, MAX = kurz ? 1200 : 3000;
+    const fertig = { schrift: false, bild: false, glas: false };
+    const hat3d = !!document.querySelector('canvas.glas-3d, canvas.auftakt-3d');
+    let webgl = false;
+    try { const c = document.createElement('canvas'); webgl = !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { /* keins */ }
+    if (!hat3d || !webgl || doc.dataset.glas === 'bereit') fertig.glas = true;
+    else document.addEventListener('glas-bereit', () => { fertig.glas = true; }, { once: true });
+    (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => { fertig.schrift = true; });
+    const erstes = document.querySelector('.auftakt-poster, .glas-poster img');
+    if (!erstes || (erstes.complete && erstes.naturalWidth)) fertig.bild = true;
+    else { const da = () => { fertig.bild = true; }; erstes.addEventListener('load', da, { once: true }); erstes.addEventListener('error', da, { once: true }); }
+    let ist = 0, offen = false;
+    const oeffnen = () => {
+      if (offen) return; offen = true;
+      doc.dataset.vorhangAuf = String(performance.now());
+      doc.dataset.vorhang = 'auf';
+      document.dispatchEvent(new Event('vorhang-auf'));
+      setTimeout(() => { doc.dataset.vorhang = 'weg'; }, 1500);
+    };
+    const tick = (t) => {
+      const zeit = t - beginn;
+      const soll = (fertig.schrift ? 0.2 : 0.05) + (fertig.bild ? 0.3 : 0) + (fertig.glas ? 0.5 : 0);
+      // nie schneller als die Mindestdauer, nie länger als die Höchstdauer
+      const ziel = zeit >= MAX ? 1 : Math.min(soll, zeit / MIN);
+      ist += (ziel - ist) * 0.16;
+      if (zahl) { zahl.textContent = String(Math.round(ist * 100)).padStart(3, '0'); zahl.style.setProperty('--fortschritt', ist.toFixed(3)); }
+      if (ist > 0.985 || (kurz && ziel >= 1)) { if (zahl) zahl.textContent = '100'; setTimeout(oeffnen, kurz ? 0 : 180); return; }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+
+  /* ---------- Große Markenschrift genau auf die Rasterbreite einpassen ---------- */
+  for (const el of document.querySelectorAll('.riesen.passend')) {
+    const passen = () => {
+      el.style.fontSize = '100px';
+      const woerter = [...el.querySelectorAll('.w')];
+      const block = woerter[0] && getComputedStyle(woerter[0]).display === 'block';
+      let breite = 0;
+      if (block) breite = Math.max(...woerter.map((w) => w.getBoundingClientRect().width));
+      else { const b = el.querySelectorAll('.b'); breite = b[b.length - 1].getBoundingClientRect().right - b[0].getBoundingClientRect().left; }
+      const platz = el.clientWidth;
+      if (breite && platz) el.style.fontSize = (100 * platz / breite * 0.995).toFixed(2) + 'px';
+    };
+    passen();
+    let letzteBreite = 0;
+    new ResizeObserver(([e]) => { const w = Math.round(e.contentRect.width); if (w !== letzteBreite) { letzteBreite = w; passen(); } }).observe(el.parentElement);
+    document.fonts?.ready.then(passen);
+  }
   const merken = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* privat */ } };
   const holen = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
   const klemmen = (x, a, b) => Math.max(a, Math.min(b, x));
@@ -168,8 +223,7 @@
 
     let pos = 0, ziel = 0, tau = 140, aktiv = -1;
     let neigung = 0, neigungZiel = 0, kipp = { x: 0, y: 0 }, kippZiel = { x: 0, y: 0 };
-    let intro = !ruhig, introStart = 0;
-    if (intro) { pos = -2.6; neigung = 16; neigungZiel = 16; liste.style.opacity = '0'; }
+    // Kein Hereindrehen: der Ring läuft von Anfang an ruhig und gleichmäßig
     const versatz = (i) => { let o = i - pos; o -= Math.round(o / n) * n; return o; };
     const index = (p) => ((Math.round(p) % n) + n) % n;
 
@@ -202,9 +256,9 @@
 
     /* Selbstlauf: dreht langsam von allein; jede Berührung pausiert, danach geht es weiter */
     // Läuft ständig; nur echtes Antippen oder Ziehen hält ihn kurz an
-    const SEKUNDEN_JE_KARTE = 3.4;
+    const SEKUNDEN_JE_KARTE = 5.6;
     let autoAn = !ruhig, pauseBis = 0, ringSichtbar = false, driftet = false;
-    const autoLaeuft = (jetzt) => autoAn && ringSichtbar && !zug && !intro && jetzt > pauseBis && !document.hidden;
+    const autoLaeuft = (jetzt) => autoAn && ringSichtbar && !zug && jetzt > pauseBis && !document.hidden;
     const pausieren = (ms = 5000) => { pauseBis = performance.now() + ms; if (driftet) { driftet = false; ziel = Math.round(pos); tau = 260; } anstossen(); };
 
     let bild = 0, zuletzt = 0;
@@ -214,11 +268,6 @@
         if (!driftet) { driftet = true; ziel = pos; }
         ziel += dt / (SEKUNDEN_JE_KARTE * 1000); tau = 120;
       } else if (driftet) { driftet = false; ziel = Math.round(pos); tau = 300; }
-      if (intro) {
-        const p = klemmen((t - introStart) / 2200, 0, 1);
-        liste.style.opacity = String(klemmen(p * 2.4, 0, 1));
-        if (p >= 1) { intro = false; tau = 140; }
-      }
       const f = 1 - Math.exp(-dt / (ruhig ? 1 : tau));
       pos += (ziel - pos) * f;
       neigung += (neigungZiel - neigung) * (1 - Math.exp(-dt / 700));
@@ -226,7 +275,7 @@
       kipp.y += (kippZiel.y - kipp.y) * (1 - Math.exp(-dt / 260));
       if (Math.abs(ziel - pos) < 0.0004) pos = ziel;
       zeichnen();
-      const ruhe = pos === ziel && Math.abs(neigungZiel - neigung) < 0.01 && Math.abs(kippZiel.x - kipp.x) < 0.01 && Math.abs(kippZiel.y - kipp.y) < 0.01 && !intro && !autoLaeuft(t);
+      const ruhe = pos === ziel && Math.abs(neigungZiel - neigung) < 0.01 && Math.abs(kippZiel.x - kipp.x) < 0.01 && Math.abs(kippZiel.y - kipp.y) < 0.01 && !autoLaeuft(t);
       // pausiert: nach Ablauf der Pause wieder anlaufen
       if (ruhe && autoAn && ringSichtbar && performance.now() <= pauseBis) setTimeout(anstossen, pauseBis - performance.now() + 20);
       bild = ruhe ? 0 : requestAnimationFrame(schrittBild);
@@ -247,16 +296,6 @@
     }
     document.addEventListener('visibilitychange', () => { if (!document.hidden) { zuletzt = 0; anstossen(); } });
     liste.addEventListener('keydown', () => pausieren(8000));
-
-    /* Hereindrehen, sobald der Ring ins Bild kommt */
-    if (intro && 'IntersectionObserver' in window) {
-      const b = new IntersectionObserver((es) => {
-        if (!es.some((e) => e.isIntersecting)) return;
-        b.disconnect();
-        introStart = performance.now(); pauseBis = introStart + 2600; tau = 520; ziel = 0; neigungZiel = 0; anstossen();
-      }, { threshold: 0.25 });
-      b.observe(liste);
-    } else { intro = false; liste.style.opacity = '1'; }
 
     /* Ziehen und Wischen */
     let zug = null, gezogen = false;
@@ -322,73 +361,10 @@
     ringBox.querySelector('[data-ring-vor]')?.addEventListener('click', () => { pausieren(8000); tau = 220; geheZu(index(ziel) + 1); });
 
     return {
-      karten, geheZu: (i) => { pausieren(12000); tau = ruhig ? 1 : 420; if (intro) { intro = false; liste.style.opacity = '1'; neigungZiel = 0; } geheZu(i); },
+      karten, geheZu: (i) => { pausieren(12000); tau = ruhig ? 1 : 420; geheZu(i); },
       neuZeigen: () => { aktiv = -1; zeichnen(); },
     };
   })();
-
-  /* ---------- Gebogener Spiegel im Auftakt der Standortseiten ---------- */
-  for (const bogen of document.querySelectorAll('.bogen')) {
-    const img = bogen.querySelector('img');
-    if (!img || !CSS.supports('transform-style', 'preserve-3d')) continue;
-    bogen.classList.add('bogen-3d');
-    const welt = document.createElement('div');
-    welt.className = 'bogen-welt';
-    bogen.append(welt);
-    let K = 0, R = 0;
-    const bauen = () => {
-      const W = bogen.clientWidth, H = bogen.clientHeight;
-      if (!W || !H) return;
-      R = W * 1.25;
-      const k = W < 420 ? 10 : 14;
-      const theta = W / R, delta = theta / k, sw = 2 * R * Math.tan(delta / 2);
-      const r = img.naturalWidth && img.naturalHeight ? img.naturalWidth / img.naturalHeight : 0.8;
-      let bgw, bgh, ox = 0, oy = 0;
-      if (W / H > r) { bgw = W; bgh = W / r; oy = (H - bgh) / 2; } else { bgh = H; bgw = H * r; ox = (W - bgw) / 2; }
-      const s = bogen.style;
-      s.setProperty('--kh', H + 'px'); s.setProperty('--r', R.toFixed(1) + 'px');
-      s.setProperty('--sw', (sw + 0.9).toFixed(2) + 'px'); s.setProperty('--schritt', sw.toFixed(3) + 'px');
-      s.setProperty('--bgw', bgw.toFixed(1) + 'px'); s.setProperty('--bgh', bgh.toFixed(1) + 'px');
-      s.setProperty('--ox', ox.toFixed(1) + 'px'); s.setProperty('--oy', oy.toFixed(1) + 'px');
-      s.setProperty('--p', (R * 2.6).toFixed(0) + 'px');
-      if (k !== K) {
-        K = k; welt.replaceChildren();
-        for (let j = 0; j < K; j++) {
-          const st = document.createElement('span');
-          st.className = 'streifen' + (j === 0 ? ' erster' : '') + (j === K - 1 ? ' letzter' : '');
-          st.style.setProperty('--j', j);
-          welt.append(st);
-        }
-      }
-      welt.querySelectorAll('.streifen').forEach((st, j) => st.style.setProperty('--a', (-(j - (K - 1) / 2) * delta).toFixed(5) + 'rad'));
-    };
-    const setzenBild = () => { bogen.style.setProperty('--bild', `url("${img.currentSrc || img.src}")`); bauen(); bogen.classList.add('bereit'); };
-    img.complete && img.naturalWidth ? setzenBild() : img.addEventListener('load', setzenBild, { once: true });
-    img.addEventListener('error', () => { bogen.classList.remove('bogen-3d'); welt.remove(); }, { once: true });
-    new ResizeObserver(bauen).observe(bogen);
-    if (!ruhig) {
-      // Neigung folgt Zeiger bzw. Scrollen, dazu ein ganz leichtes Atmen
-      const ziel = { x: 0, y: 0 }, ist = { x: 0, y: 0 };
-      if (feinZeiger) addEventListener('pointermove', (e) => { ziel.x = (e.clientX / innerWidth - 0.5) * 2; ziel.y = (e.clientY / innerHeight - 0.5) * 2; }, { passive: true });
-      else addEventListener('scroll', () => { ziel.x = Math.sin(scrollY / 260) * 0.28; ziel.y = klemmen(scrollY / innerHeight, 0, 1) * 0.6; }, { passive: true });
-      let sichtbar = true, lauf = 0, letzt = 0;
-      new IntersectionObserver(([e]) => { sichtbar = e.isIntersecting; if (sichtbar && !lauf) lauf = requestAnimationFrame(schritt); }).observe(bogen);
-      function schritt(t) {
-        const dt = letzt ? Math.min(64, t - letzt) : 16; letzt = t;
-        const f = 1 - Math.exp(-dt / 320);
-        ist.x += (ziel.x - ist.x) * f; ist.y += (ziel.y - ist.y) * f;
-        const atmen = Math.sin(t / 2600) * 2.2;
-        welt.style.transform = `translateZ(${R.toFixed(1)}px) rotateY(${(ist.x * 9 + atmen).toFixed(3)}deg) rotateX(${(-ist.y * 5).toFixed(3)}deg)`;
-        lauf = sichtbar && !document.hidden ? requestAnimationFrame(schritt) : 0;
-        if (!lauf) letzt = 0;
-      }
-      document.addEventListener('visibilitychange', () => { if (!document.hidden && sichtbar && !lauf) lauf = requestAnimationFrame(schritt); });
-      lauf = requestAnimationFrame(schritt);
-    } else {
-      const zentrieren = () => { welt.style.transform = `translateZ(${R.toFixed(1)}px)`; };
-      zentrieren(); new ResizeObserver(zentrieren).observe(bogen);
-    }
-  }
 
   /* ---------- Kapitelleiste der Standortseiten ---------- */
   const kapLeiste = document.querySelector('.kapitel');

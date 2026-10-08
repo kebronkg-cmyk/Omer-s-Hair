@@ -11,11 +11,10 @@ keine Cookies, keine externen Schriften.
 | `/mira/` | **Salon MIRA**, komplett: Preis-Studio, Fan Card, Galerie, Bewertungen, Anfahrt mit Etagenanzeige |
 | `/barber-mira/` | Barber Shop MIRA: Grundgerüst (Kontakt, Zeiten, Galerie), Preise folgen |
 | `/isartor/` | Salon Isartor: Grundgerüst mit Planity-Buchung, Preise folgen |
-| `/riem/` | Salon Riem Arcaden: Ladenfront, Galerie, Stadtplan, Buchung über omers-hair.de |
 | `/impressum/`, `/datenschutz/` | Rechtstexte, Platzhalter sind gelb markiert |
 | `/404.html` | Fehlerseite |
 
-Bogenhausen verlinkt vorerst auf omers-hair.de.
+Bogenhausen und Riem Arcaden verlinken vorerst auf omers-hair.de (die Riem-Seite folgt später).
 
 ## Bearbeiten
 
@@ -34,10 +33,13 @@ Lokal ansehen: `npx serve .` und `http://localhost:3000` öffnen.
 
 ## Funktionen
 
-- **Glas-Schrift** (Startseite und Standortseiten): Namen als räumliche Glasbuchstaben mit blau leuchtenden Kanten, auf den Standortseiten vor der Ladenfront (three.js, lokal gebündelt in `assets/js/glas3d.js`, Quelle `tools/glas3d.src.js`, Buchstabenformen in `tools/glyphen.json`). Folgt Maus und Scrollen, pausiert außerhalb des Bildes; Chrom-Schrift als Rückfall ohne WebGL.
-- **Salon-Ring**: die Ladenfronten der fünf Salons als gebogene Karten auf einem Zylinder. Dreht sich von allein (3,4 s je Karte); nur Antippen oder Ziehen hält ihn kurz an. Klick auf eine Seitenkarte dreht sie nach vorn, Klick auf die mittlere öffnet den Salon.
+- **Ladevorgang**: Rasterlinien ziehen sich auf, Logo mit Glanz, Zähler nach echtem Fortschritt (Schrift, erstes Bild, 3D), dann heben sich die sechs Spalten. Beim Weiterklicken nur kurz, ohne Skript und bei reduzierter Bewegung gar nicht, nach spätestens 3 Sekunden immer offen.
+- **Startseite**: Chrom-Strähnen der ersten Fassung (Weiß und Leuchtschild-Blau, `tools/straehnen.src.js`), Markenschrift exakt auf die Rasterbreite eingepasst.
+- **Glasschrift der Standortseiten** (`tools/glas3d.src.js`): der Name als Röhren aus Glas, eigene Linien-Buchstaben, innen die gebrochene Lichtumgebung, außen weiße Spiegelkanten, Funkeln und Leuchten; je Salon eigene Lichtstimmung (MIRA Blau, Barber Eis, Isartor mit warmem Akzent). Folgt Maus und Scrollen; Standbild derselben Szene als Rückfall ohne WebGL.
+- **Salon-Ring**: die Ladenfronten der fünf Salons als gebogene Karten auf einem Zylinder. Dreht sich ruhig und gleichmäßig von allein (5,6 s je Karte), ohne Hereindrehen; nur Antippen oder Ziehen hält ihn kurz an. Klick auf eine Seitenkarte dreht sie nach vorn, Klick auf die mittlere öffnet den Salon.
 - **Auf einen Blick**: alle Salons mit Adresse, Live-Status, Telefon und Buchung in einer Liste
-- **Standortseiten**: Ladenfront ganz oben mit Glas-Schrift, darunter kompakte Leiste mit Buchen, Anrufen, Route; Kapitelleiste, die mitläuft
+- **Standortseiten**: Glasschrift über den ganzen ersten Bildschirm mit Buchen, Anrufen, Route unten, direkt darunter die Ladenfront gerade und ganz mit den Eckdaten; Kapitelleiste, die mitläuft
+- **Raster**: sechs Spalten mit feinen Linien, Kopf und alle Abschnitte liegen genau darin; Schrift steht immer gleich weit neben einer Linie, Bilder liegen bündig
 - **Nächsten Salon finden**: Standort wird nur im Browser verglichen, der Ring dreht zum nächsten Salon und zeigt die Entfernung
 - **Live-Öffnungsstand** nach Münchner Uhr, „5/5 Salons jetzt geöffnet“ im ersten Bildschirm
 - **Preis-Studio** (MIRA): Reiter mit Lichtschieber, große Ab-Preise in Chrom, Leistungen antippen ergibt einen Richtwert für den Termin, direkt weiter zu Planity
