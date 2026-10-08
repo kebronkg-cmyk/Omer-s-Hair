@@ -8,3 +8,4 @@
 6 49e5710 Glas-Schrift, Ladenfronten, Riem-Seite, Preis-Studio
 7 1a261b7 Glasschrift, Strähnen erste Fassung, Raster, Ladevorgang
 8 24ceb42 Scrollen repariert, Namen in einem Stück, Instagram-Vorschau
+9 7637d5b Ring nach vorn gewölbt, Lichtimpuls, Antippen
