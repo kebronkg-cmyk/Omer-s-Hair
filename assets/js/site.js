@@ -168,7 +168,16 @@
     ringBox.classList.add('ring-3d');
     const welt = document.createElement('div');
     welt.className = 'ring-welt';
-    karten.forEach((k) => welt.append(k));
+    // Zweite Reihe für die Rückseite der Trommel: gleiche Salons, nur Bild, für Vorleser und Tastatur unsichtbar
+    const kopien = karten.map((k) => {
+      const c = k.cloneNode(true);
+      c.classList.add('kopie'); c.setAttribute('aria-hidden', 'true'); c.removeAttribute('data-lat'); c.removeAttribute('data-lon');
+      c.querySelectorAll('a').forEach((a) => a.setAttribute('tabindex', '-1'));
+      return c;
+    });
+    const plaetze = [...karten, ...kopien];
+    const N = plaetze.length;
+    plaetze.forEach((k) => welt.append(k));
     liste.append(welt);
     liste.setAttribute('tabindex', '0');
     liste.setAttribute('aria-roledescription', 'Karussell');
@@ -182,9 +191,10 @@
     const lc = licht.getContext('2d');
 
     let K = 0, R = 0, W = 0, H = 0, schritt = 1, abstandPx = 0, P = 1400, breite = 0, dpr = 1;
+    const NEIGUNG = -11;      // Trommel leicht gekippt: die Rückseite zeigt sich verblasst über der vorderen Reihe
     const PO_Y = 0.8;          // Augenhöhe weit unten: die Oberkanten wölben sich wie in der Referenz
     const RUND = 22;           // Eckradius der Karten (wie --rund)
-    const bilder = karten.map((k) => k.querySelector('img'));
+    const bilder = plaetze.map((k) => k.querySelector('img'));
     bilder.forEach((img) => { if (img) img.loading = 'eager'; });   // versteckte Bilder laden sonst nie
 
     const masse = () => {
@@ -193,13 +203,15 @@
       const SEITE = 4 / 3;     // Format der Ladenfronten, nichts wird angeschnitten
       W = schmal ? Math.min(vw * 0.8, 440) : klemmen(vw * 0.42, 400, 660);
       H = Math.min(W / SEITE, innerHeight * (schmal ? 0.5 : 0.62));
-      R = W * (schmal ? 1.25 : 1.4);
-      P = R * (schmal ? 2.6 : 2.3);
-      const neuK = schmal ? 10 : 16;
+      abstandPx = schmal ? 30 : 92;   // Fuge wie in der Referenz, Platz für den Blitz
+      // geschlossene Trommel: alle Plätze zusammen ergeben genau einen Umlauf
+      schritt = (Math.PI * 2) / N;
+      R = (W + abstandPx) / schritt;
+      P = R * (schmal ? 2.1 : 1.85);
+      // so viele Streifen, dass die Krümmung auch ganz außen glatt bleibt (Streifen nie schmaler als die Ecke)
+      const neuK = Math.max(10, Math.floor(W / (schmal ? 24 : 26)));
       const theta = W / R, delta = theta / neuK;
       const sw = 2 * R * Math.tan(delta / 2);
-      abstandPx = schmal ? 30 : 92;   // Fuge wie in der Referenz, Platz für den Blitz
-      schritt = theta + abstandPx / R;
       let bgw, bgh, ox = 0, oy = 0;
       if (W / H > SEITE) { bgw = W; bgh = W / SEITE; oy = (H - bgh) / 2; } else { bgh = H; bgw = H * SEITE; ox = (W - bgw) / 2; }
       const s = liste.style;
@@ -213,7 +225,7 @@
       s.perspectiveOrigin = `50% ${(H * PO_Y).toFixed(1)}px`;
       if (neuK !== K) {
         K = neuK;
-        karten.forEach((k, i) => {
+        plaetze.forEach((k, i) => {
           const halter = k.querySelector('.ring-bild');
           halter.querySelectorAll('.streifen').forEach((x) => x.remove());
           for (let j = 0; j < K; j++) {
@@ -225,10 +237,10 @@
           bildSetzen(i);
         });
       }
-      karten.forEach((k) => k.querySelectorAll('.streifen').forEach((st, j) => st.style.setProperty('--a', ((j - (K - 1) / 2) * delta).toFixed(5) + 'rad')));
+      plaetze.forEach((k) => k.querySelectorAll('.streifen').forEach((st, j) => st.style.setProperty('--a', ((j - (K - 1) / 2) * delta).toFixed(5) + 'rad')));
       // Lichtleinwand
       breite = vw;
-      dpr = Math.min(devicePixelRatio || 1, schmal ? 1.5 : 2);
+      dpr = 1;
       licht.style.top = -RAND + 'px';
       licht.style.height = (H + 2 * RAND) + 'px';
       licht.width = Math.round(breite * dpr); licht.height = Math.round((H + 2 * RAND) * dpr);
@@ -236,45 +248,46 @@
     };
     const bildSetzen = (i) => {
       const img = bilder[i]; if (!img) return;
-      const setzen = () => karten[i].querySelector('.ring-bild').style.setProperty('--bild', `url("${img.currentSrc || img.src}")`);
+      const setzen = () => plaetze[i].querySelector('.ring-bild').style.setProperty('--bild', `url("${img.currentSrc || img.src}")`);
       img.complete && img.naturalWidth ? setzen() : img.addEventListener('load', setzen, { once: true });
     };
 
+    const glatt = (a, b, x) => { const t = klemmen((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
     let pos = 0, ziel = 0, tau = 140, aktiv = -1, tempo = 0;
     let kipp = { x: 0, y: 0 }, kippZiel = { x: 0, y: 0 };
     let gewaehlt = -1;
-    const vor = karten.map(() => 0);
-    const zuletztGesetzt = karten.map(() => ({ d: -1, g: -1, t: '' }));
-    const versatz = (i) => { let o = i - pos; o -= Math.round(o / n) * n; return o; };
+    const vor = plaetze.map(() => 0);
+    const zuletztGesetzt = plaetze.map(() => ({ d: -1, g: -1, h: -1, t: '' }));
+    const versatz = (i) => { let o = i - pos; o -= Math.round(o / N) * N; return o; };
+    const vornPlatz = () => ((Math.round(pos) % N) + N) % N;
     const index = (p) => ((Math.round(p) % n) + n) % n;
     const vorWeg = () => R * 0.085;   // wie weit eine gewählte Karte nach vorn kommt
 
     const zeichnen = () => {
-      for (let i = 0; i < n; i++) {
+      for (let i = 0; i < N; i++) {
         const o = versatz(i), a = o * schritt, b = Math.abs(o);
-        const k = karten[i];
-        const sichtbar = Math.abs(a) < 1.4;
-        k.style.visibility = sichtbar ? 'visible' : 'hidden';
-        if (!sichtbar) continue;
+        const k = plaetze[i];
         const t = `rotateY(${a.toFixed(5)}rad) translateZ(${(vor[i] * vorWeg()).toFixed(2)}px) translateY(${(-vor[i] * 6).toFixed(2)}px)`;
         const merk = zuletztGesetzt[i];
         if (t !== merk.t) { k.style.transform = t; merk.t = t; }
         // Abdunkeln und Glanz nur schreiben, wenn sie sich sichtbar ändern (spart Malarbeit)
-        const dunkel = Math.round(Math.min(0.78, b * 0.52 + (gewaehlt >= 0 && gewaehlt !== i ? 0.25 : 0)) * 100) / 100;
+        // Rückseite: verblasst und dunkel, dreht sichtbar hinten mit
+        const hinten = Math.round(glatt(1.3, 1.85, Math.abs(a)) * 100) / 100;
+        const dunkel = Math.round(Math.min(0.82, b * 0.45 + hinten * 0.3 + (gewaehlt >= 0 && i % n !== gewaehlt ? 0.25 : 0)) * 100) / 100;
         const glanz = Math.round(Math.max(0, 1 - b) * 100) / 100;
         if (dunkel !== merk.d) { k.style.setProperty('--dunkel', dunkel); merk.d = dunkel; }
         if (glanz !== merk.g) { k.style.setProperty('--glanz', glanz); merk.g = glanz; }
+        if (hinten !== merk.h) { k.style.setProperty('--deck', (1 - hinten * 0.55).toFixed(2)); merk.h = hinten; }
       }
-      welt.style.transform = `rotateX(${kipp.y.toFixed(3)}deg) rotateY(${kipp.x.toFixed(3)}deg) translateZ(${(-R).toFixed(1)}px)`;
+      welt.style.transform = `rotateX(${(kipp.y + NEIGUNG).toFixed(3)}deg) rotateY(${kipp.x.toFixed(3)}deg) translateZ(${(-R).toFixed(1)}px)`;
       const neu = index(pos);
       if (neu !== aktiv) { aktiv = neu; aktivZeigen(); }
     };
 
     const aktivZeigen = () => {
-      karten.forEach((k, i) => {
-        k.classList.toggle('aktiv', i === aktiv);
-        k.querySelectorAll('a').forEach((a) => a.setAttribute('tabindex', i === aktiv ? '0' : '-1'));
-      });
+      const vorn = vornPlatz();
+      plaetze.forEach((k, i) => k.classList.toggle('aktiv', i === vorn));
+      karten.forEach((k, i) => k.querySelectorAll('a').forEach((a) => a.setAttribute('tabindex', i === aktiv && vorn === i ? '0' : '-1')));
       const info = karten[aktiv].querySelector('.ring-info').cloneNode(true);
       info.classList.add('neu');
       panel.replaceChildren(info);
@@ -294,7 +307,7 @@
       gerade(-hw, H - r, -hw, r, 24); bogen(-hw + r, r, Math.PI);
       return pts;
     }
-    const projizieren = (i, u, v) => {
+    const projizieren = (i, u, v) => {   // i = Platz
       const o = versatz(i), a = o * schritt, be = u / R;
       let x = R * Math.sin(be), y = v - H / 2, z = R * Math.cos(be) + vor[i] * vorWeg();
       y -= vor[i] * 6;
@@ -302,7 +315,7 @@
       let x2 = x * Math.cos(a) + z * Math.sin(a), z2 = -x * Math.sin(a) + z * Math.cos(a);
       // Welt: translateZ(-R), dann rotateY(kipp.x), dann rotateX(kipp.y)
       z2 -= R;
-      const ky = kipp.x * Math.PI / 180, kx = kipp.y * Math.PI / 180;
+      const ky = kipp.x * Math.PI / 180, kx = (kipp.y + NEIGUNG) * Math.PI / 180;
       const x3 = x2 * Math.cos(ky) + z2 * Math.sin(ky), z3 = -x2 * Math.sin(ky) + z2 * Math.cos(ky);
       const y4 = y * Math.cos(kx) - z3 * Math.sin(kx), z4 = y * Math.sin(kx) + z3 * Math.cos(kx);
       const X = breite / 2 + x3, Y = H / 2 + y4, ox = breite / 2, oy = H * PO_Y, f = P / (P - z4);
@@ -312,7 +325,6 @@
     const punktAuf = (pfad, s) => { const L = pfad.length, f = ((s % 1) + 1) % 1 * L, k = Math.floor(f), t = f - k, p = pfad[k], q = pfad[(k + 1) % L]; return [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t]; };
 
     /* ---------- Licht: Umlauf, Sammeln, Blitz, Aufladen ---------- */
-    const glatt = (a, b, x) => { const t = klemmen((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
     const sRechtsMitte = () => { const pts = rahmen; let best = 0, d = Infinity; pts.forEach(([u, v], k) => { const e = Math.abs(u - W / 2) + Math.abs(v - H / 2); if (e < d) { d = e; best = k; } }); return best / pts.length; };
     const sLinksMitte = () => { const pts = rahmen; let best = 0, d = Infinity; pts.forEach(([u, v], k) => { const e = Math.abs(u + W / 2) + Math.abs(v - H / 2); if (e < d) { d = e; best = k; } }); return best / pts.length; };
     let funken = [], blitzForm = null, blitzZeit = 0, scharf = -1, effekt = 0, effektZiel = 0, letzteZeichnung = false;
@@ -322,27 +334,30 @@
       lc.beginPath();
       const L = pfad.length, a = Math.floor(von * L), b = Math.ceil(bis * L);
       for (let k = a; k <= b; k++) { const p = pfad[((k % L) + L) % L]; k === a ? lc.moveTo(p[0], p[1]) : lc.lineTo(p[0], p[1]); }
-      lc.lineWidth = breiteL; lc.strokeStyle = farbe; lc.shadowBlur = schein; lc.shadowColor = 'rgba(63,130,255,.95)'; lc.stroke();
+      lc.lineCap = 'round'; lc.lineJoin = 'round';
+      if (schein) { lc.lineWidth = breiteL * 4.5; lc.strokeStyle = schein; lc.stroke(); }   // Schein als breiter, blasser Strich (statt teurem Schatten)
+      lc.lineWidth = breiteL; lc.strokeStyle = farbe; lc.stroke();
     };
     const ganzerRahmen = (pfad, alpha, dicke = 1.6) => {
       if (alpha <= 0.01) return;
       lc.beginPath(); pfad.forEach((p, k) => (k ? lc.lineTo(p[0], p[1]) : lc.moveTo(p[0], p[1]))); lc.closePath();
-      lc.lineWidth = dicke * 3; lc.strokeStyle = `rgba(63,130,255,${(alpha * 0.35).toFixed(3)})`; lc.shadowBlur = 22; lc.shadowColor = 'rgba(63,130,255,.9)'; lc.stroke();
-      lc.lineWidth = dicke; lc.strokeStyle = `rgba(190,220,255,${(alpha * 0.9).toFixed(3)})`; lc.shadowBlur = 8; lc.stroke();
+      lc.lineJoin = 'round';
+      lc.lineWidth = dicke * 9; lc.strokeStyle = `rgba(63,130,255,${(alpha * 0.1).toFixed(3)})`; lc.stroke();
+      lc.lineWidth = dicke * 3.5; lc.strokeStyle = `rgba(63,130,255,${(alpha * 0.3).toFixed(3)})`; lc.stroke();
+      lc.lineWidth = dicke; lc.strokeStyle = `rgba(200,225,255,${(alpha * 0.95).toFixed(3)})`; lc.stroke();
     };
     const komet = (pfad, kopf, laenge, alpha) => {
       const schritte = 12;
       for (let k = 0; k < schritte; k++) {
         const s1 = kopf - (k / schritte) * laenge, s0 = kopf - ((k + 1) / schritte) * laenge;
         const t = 1 - k / schritte;
-        linie(pfad, s0, s1, 1 + 3.2 * t * t, `rgba(${(150 + 105 * t) | 0},${(195 + 60 * t) | 0},255,${(alpha * t * t).toFixed(3)})`, 16 * t);
+        linie(pfad, s0, s1, 1 + 3.2 * t * t, `rgba(${(150 + 105 * t) | 0},${(195 + 60 * t) | 0},255,${(alpha * t * t).toFixed(3)})`, `rgba(63,130,255,${(alpha * t * 0.16).toFixed(3)})`);
       }
       const [x, y] = punktAuf(pfad, kopf);
       punkt(x, y, 34 * alpha, alpha);
     };
     const punkt = (x, y, r, alpha) => {
       if (alpha <= 0.01 || r <= 0.5) return;
-      lc.shadowBlur = 0;
       const g = lc.createRadialGradient(x, y, 0, x, y, r);
       g.addColorStop(0, `rgba(255,255,255,${alpha.toFixed(3)})`); g.addColorStop(0.18, `rgba(200,225,255,${(alpha * 0.85).toFixed(3)})`);
       g.addColorStop(0.45, `rgba(63,130,255,${(alpha * 0.35).toFixed(3)})`); g.addColorStop(1, 'rgba(63,130,255,0)');
@@ -369,7 +384,7 @@
     };
     const zug2 = (pts, dicke, farbe, schein) => {
       lc.beginPath(); pts.forEach((p, k) => (k ? lc.lineTo(p[0], p[1]) : lc.moveTo(p[0], p[1])));
-      lc.lineWidth = dicke; lc.strokeStyle = farbe; lc.shadowBlur = schein; lc.shadowColor = 'rgba(63,130,255,1)'; lc.lineJoin = 'round'; lc.lineCap = 'round'; lc.stroke();
+      lc.lineWidth = dicke; lc.strokeStyle = farbe; lc.lineJoin = 'round'; lc.lineCap = 'round'; lc.stroke();
     };
 
     const lichtZeichnen = (t, dt) => {
@@ -384,7 +399,7 @@
       leeren(); letzteZeichnung = true;
       lc.setTransform(dpr, 0, 0, dpr, 0, 0);
       lc.globalCompositeOperation = 'lighter';
-      const quelle = ((zyklus % n) + n) % n, zielK = (quelle + 1) % n;
+      const quelle = ((zyklus % N) + N) % N, zielK = (quelle + 1) % N;
       const A = rahmenVon(quelle), B = rahmenVon(zielK);
       const sR = sRechtsMitte(), sL = sLinksMitte();
       const e = effekt;
@@ -410,6 +425,7 @@
         const a = e * s * flacker;
         for (const p of [blitzForm.haupt, ...blitzForm.aeste]) {
           const ast = p !== blitzForm.haupt;
+          zug2(p, ast ? 14 : 26, `rgba(63,130,255,${(a * 0.08).toFixed(3)})`, 0);
           zug2(p, ast ? 6 : 12, `rgba(63,130,255,${(a * 0.22).toFixed(3)})`, 30);
           zug2(p, ast ? 2 : 4, `rgba(143,186,255,${(a * 0.75).toFixed(3)})`, 14);
           zug2(p, ast ? 0.8 : 1.6, `rgba(255,255,255,${a.toFixed(3)})`, 4);
@@ -420,7 +436,6 @@
         }
       } else blitzForm = null;
       // Funken am Einschlag
-      lc.shadowBlur = 0;
       funken = funken.filter((f) => (f.leben -= dt / 650) > 0);
       for (const f of funken) { f.x += f.vx * dt; f.y += f.vy * dt; f.vx *= 0.985; f.vy *= 0.985; punkt(f.x, f.y, 6 * f.leben + 2, e * f.leben); }
       // 4 Aufladen: zwei Lichtfronten laufen von links um den Rahmen und treffen sich rechts
@@ -428,7 +443,7 @@
         const f = glatt(0.5, 0.8, phi);
         const halb = 0.5 * f;
         const nachglut = 1 - glatt(0.84, 0.98, phi);
-        linie(B, sL - halb, sL + halb, 2.2, `rgba(200,225,255,${(e * 0.85 * nachglut).toFixed(3)})`, 14);
+        linie(B, sL - halb, sL + halb, 2.2, `rgba(200,225,255,${(e * 0.85 * nachglut).toFixed(3)})`, `rgba(63,130,255,${(e * 0.2 * nachglut).toFixed(3)})`);
         if (f < 1) { const p1 = punktAuf(B, sL + halb), p2 = punktAuf(B, sL - halb); punkt(p1[0], p1[1], 26, e); punkt(p2[0], p2[1], 26, e); }
         // Treffen: der ganze Rahmen blitzt einmal auf
         const blitzAuf = glatt(0.78, 0.82, phi) * (1 - glatt(0.82, 0.95, phi));
@@ -470,12 +485,12 @@
         pos += (ziel - pos) * (1 - Math.exp(-dt / (ruhig ? 1 : tau)));
         if (Math.abs(ziel - pos) < 0.0004) pos = ziel;
       }
-      for (let i = 0; i < n; i++) { const soll = i === gewaehlt ? 1 : 0; vor[i] += (soll - vor[i]) * (1 - Math.exp(-dt / 240)); if (Math.abs(soll - vor[i]) < 0.002) vor[i] = soll; }
+      for (let i = 0; i < N; i++) { const soll = i % n === gewaehlt && Math.abs(versatz(i)) < 0.5 ? 1 : 0; vor[i] += (soll - vor[i]) * (1 - Math.exp(-dt / 240)); if (Math.abs(soll - vor[i]) < 0.002) vor[i] = soll; }
       kipp.x += (kippZiel.x - kipp.x) * (1 - Math.exp(-dt / 300));
       kipp.y += (kippZiel.y - kipp.y) * (1 - Math.exp(-dt / 300));
       zeichnen();
       if (!ruhig) lichtZeichnen(t, dt);
-      const ruhe = pos === ziel && !autoLaeuft(t) && vor.every((v, i) => v === (i === gewaehlt ? 1 : 0))
+      const ruhe = pos === ziel && !autoLaeuft(t) && vor.every((v) => v === 0 || v === 1)
         && Math.abs(kippZiel.x - kipp.x) < 0.01 && Math.abs(kippZiel.y - kipp.y) < 0.01 && effekt < 0.004;
       if (ruhe && autoAn && ringSichtbar && gewaehlt < 0 && performance.now() <= pauseBis) setTimeout(anstossen, pauseBis - performance.now() + 20);
       bild = ruhe ? 0 : requestAnimationFrame(schrittBild);
@@ -504,7 +519,7 @@
     document.addEventListener('pointerdown', (e) => {
       if (gewaehlt < 0) return;
       const k = e.target.closest?.('.ring-karte');
-      if (k && karten.indexOf(k) === gewaehlt) return;
+      if (k && plaetze.indexOf(k) % n === gewaehlt) return;
       if (e.target.closest?.('.ring-panel, .ring-steuer')) return;
       if (!k) loesen();
     }, true);
@@ -570,8 +585,11 @@
       if (gezogen) { e.preventDefault(); e.stopPropagation(); gezogen = false; return; }
       const k = e.target.closest('.ring-karte');
       if (!k) { loesen(); return; }
-      const i = karten.indexOf(k);
-      if (i === gewaehlt) return;                     // Link öffnet den Salon
+      const i = plaetze.indexOf(k) % n;
+      if (i === gewaehlt) {                           // zweites Tippen öffnet den Salon
+        if (k.classList.contains('kopie')) { e.preventDefault(); location.href = karten[i].querySelector('.ring-bild').href; }
+        return;
+      }
       e.preventDefault();
       waehlen(i);
     }, true);

@@ -162,8 +162,6 @@ def main(quelle: Path):
     klein = lambda im, b: schwach_aufwerten(im, b)
 
     # Ladenfronten (Ring und oberstes Bild der Salonseiten), 4:3, ganz sichtbar
-    schreiben(front(retusche(lade('mira-front'), (700, 525, 900, 600), 230), fx=0.6), 'front-mira', (800, 1600))
-    schreiben(front(retusche(lade('b-front'), (690, 520, 900, 600), 240), fx=0.5), 'front-barber', (800, 1600))
     schreiben(front(retusche(lade('bo-front'), (700, 525, 900, 600), 240), fx=0.75), 'front-bogenhausen', (800, 1600))
     schreiben(front(lade('ri-front'), fy=0.4), 'front-riem', (800, 1600))
     schreiben(front(lade('neon'), fy=0.28), 'front-isartor', (800, 1600))
@@ -184,9 +182,21 @@ def main(quelle: Path):
     # Riem: Galerie folgt mit der eigenen Seite (dann wieder ri-1 bis ri-5 wie Barber)
 
     insta(quelle)
+    neue_fronten(quelle)
 
 
-def insta(quelle: Path):
+def neue_fronten(quelle: Path):
+    """Schärfere Aufnahmen vom Kunden (fronten-neu.png: oben Salon MIRA, unten Barber Shop, je ein Panorama).
+    Für den Ring ein 4:3-Ausschnitt um das Leuchtschild, für die Salonseite das ganze Panorama.
+    Die Fotos sind schon bearbeitet: nur zuschneiden, behutsam vergrößern, nachschärfen."""
+    im = Image.open(quelle / 'fronten-neu.png').convert('RGB')
+    teile = {'mira': im.crop((0, 0, im.width, 566)), 'barber': im.crop((0, 574, im.width, im.height))}
+    for name, bild in teile.items():
+        h = bild.height; b = round(h * 4 / 3); x0 = round(720 - b / 2)
+        ring = bild.crop((x0, 0, x0 + b, h))
+        schreiben(ring.resize((1600, 1200), Image.LANCZOS), f'front-{name}', (800, 1600), q=84)
+        schreiben(bild, f'laden-{name}', (900, bild.width), q=86)
+
     """Vorschau-Kacheln aus den Instagram-Profilen (Bildschirmfotos der Kacheln, insta-*.png).
     Der Streifen mit dem Symbol oben wird abgeschnitten; Haarfarben bleiben natürlich, nur etwas Kontrast und Schärfe."""
     from PIL import ImageEnhance

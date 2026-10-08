@@ -350,7 +350,7 @@ main, .fuss { position: relative; z-index: 2; }
 
 /* Mit Skript: Bühne in 3D */
 .ring-buehne { position: relative; }
-.ring-3d .ring-buehne { margin-top: clamp(1.6rem, 4vw, 3rem); }
+.ring-3d .ring-buehne { margin-top: clamp(4rem, 9vw, 7.5rem); }   /* Platz für die Rückseite der Trommel */
 .ring-3d .ring { display: block; overflow: visible; padding: 0; height: var(--kh, 600px); position: relative; perspective: 1400px; perspective-origin: 50% 80%; touch-action: pan-y; cursor: grab; user-select: none; -webkit-user-select: none; }
 .ring-3d .ring.zieht { cursor: grabbing; }
 .ring-3d .ring-welt { position: absolute; left: 50%; top: 0; width: 0; height: var(--kh); -webkit-transform-style: preserve-3d; transform-style: preserve-3d; }
@@ -360,7 +360,8 @@ main, .fuss { position: relative; z-index: 2; }
 .ring-3d .ring-bild img { display: none; }
 .streifen {
   position: absolute; top: 0; left: calc(var(--sw) / -2); width: var(--sw); height: var(--kh);
-  -webkit-backface-visibility: hidden; backface-visibility: hidden;
+  -webkit-backface-visibility: visible; backface-visibility: visible;   /* hinten sieht man die Rückseiten mitdrehen */
+  opacity: var(--deck, 1);
   background-image: var(--bild); background-repeat: no-repeat;
   background-size: var(--bgw) var(--bgh);
   background-position: calc(var(--ox) - var(--j) * var(--schritt)) var(--oy);
@@ -527,6 +528,10 @@ main, .fuss { position: relative; z-index: 2; }
 }
 
 /* Ladenfront: gerade, ganz, mit den Eckdaten in der Spalte daneben */
+.ladenfront-raster.panorama .front-bild { grid-column: 1 / -1; }
+.ladenfront-raster.panorama .front-bild img { aspect-ratio: auto; height: auto; }
+.ladenfront-raster.panorama .front-daten { grid-column: 1 / -1; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 1rem; }
+.ladenfront-raster.panorama .front-daten div:nth-child(n+2) { border-left: 1px solid var(--linie); }
 .ladenfront { padding: var(--luft) 0; }
 .ladenfront-raster { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); align-items: stretch; }
 .front-bild { grid-column: 1 / span 4; margin: 0; overflow: hidden; border-radius: 6px; background: var(--grund-3); box-shadow: 0 0 0 1px rgb(255 255 255 / .08); }
@@ -970,3 +975,7 @@ html.kopf-weg .kapitel-halter { top: 0; }
 [data-vorhang-art='kurz'] .vorhang-mitte, [data-vorhang-art='kurz'] .vorhang-spalten i::after { display: none; }
 [data-vorhang='auf'] .vorhang-spalten i { transform: translateY(-101%); }
 [data-vorhang='auf'] .vorhang-mitte { opacity: 0; translate: -50% -70%; }
+@media (max-width: 52rem) {
+  .ladenfront-raster.panorama .front-daten { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ladenfront-raster.panorama .front-daten div:nth-child(3) { border-left: 0; }
+}

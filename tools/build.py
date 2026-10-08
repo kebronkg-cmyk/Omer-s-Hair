@@ -96,7 +96,7 @@ BREITEN = {
     **{f'front-{n}': (800, 1600) for n in ('mira', 'barber', 'isartor', 'bogenhausen', 'riem')},
     'mira-reihe': (900, 1500), 'mira-wasch': (900, 1500), 'mira-herren': (900, 1800),
     'isartor-raum': (900, 1600), 'isartor-gang': (900, 1600), 'isartor-boegen': (900, 1200),
-    'barber-stuehle': (900, 1500),
+    'barber-stuehle': (900, 1500), 'laden-mira': (900, 1448), 'laden-barber': (900, 1448),
     **{f'insta-{n}': (380, 380) for n in ('haupt-1', 'haupt-2', 'haupt-3', 'mira-1', 'mira-2', 'mira-3')},
 }
 
@@ -592,9 +592,15 @@ def ladenfront(s, p, etage):
     zeilen = [('Adresse', f'{e(s["strasse"])}<br>{s["plz"]} {s["ort"]}'), ('Lage', e(etage)),
               ('Geöffnet', e(s["zeiten_text"]).replace(' · ', '<br>')), ('Telefon', f'<a href="tel:{s["tel_int"]}">{s["tel"]}</a>')]
     daten = ''.join(f'<div><dt>{k}</dt><dd>{v}</dd></div>' for k, v in zeilen)
+    # Gibt es ein Panorama der Ladenfront, steht es über die ganze Breite, die Eckdaten darunter
+    pano = {'mira': 'laden-mira', 'barber-mira': 'laden-barber'}.get(s['id'])
+    if pano:
+        figur = f'<figure class="front-bild">{bild(pano, s["karte_alt"], p, "(max-width: 52rem) 96vw, 1360px", "eager")}</figure>'
+    else:
+        figur = f'<figure class="front-bild">{bild(s["karte"], s["karte_alt"], p, "(max-width: 52rem) 92vw, 64vw", "eager")}</figure>'
     return f'''<section class="ladenfront" aria-label="Ladenfront">
-    <div class="huelle ladenfront-raster">
-      <figure class="front-bild">{bild(s["karte"], s["karte_alt"], p, "(max-width: 52rem) 92vw, 64vw", "eager")}</figure>
+    <div class="huelle ladenfront-raster{" panorama" if pano else ""}">
+      {figur}
       <dl class="front-daten">{daten}</dl>
     </div>
   </section>
