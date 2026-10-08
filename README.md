@@ -47,6 +47,7 @@ Lokal ansehen: `npx serve .` und `http://localhost:3000` öffnen.
 - **Fan Card** mit Hologramm-Folie, die Finger bzw. Maus folgt, und Stempeln beim Hereinscrollen
 - **Etagenanzeige** UG/EG für Salon und Barber im MIRA, **Aktionsleiste am Handy** (Buchen · Anrufen · Route)
 - **Galerie** gleichmäßig im Raster je nach Bildanzahl, mit Blättern (Pfeiltasten, Wischen)
+- **Instagram-Vorschau**: je drei Arbeiten aus dem Hauptprofil (Startseite) und dem MIRA-Profil (Salon MIRA), aus `tools/bilder.py` (`insta()`, Quellen `insta-*.png`)
 - Alles mit reduzierter Bewegung und ohne Skript bedienbar; schema.org `HairSalon` je Standort
 
 ## Bilder

@@ -266,7 +266,7 @@ function start() {
         vec2 q = vec2(cos(uWinkel) * p.x - sin(uWinkel) * p.y, sin(uWinkel) * p.x + cos(uWinkel) * p.y);
         float streif = exp(-pow((q.y - 0.55 * sin(t * 0.05)) / 0.035, 2.0)) * smoothstep(1.8, 0.0, abs(q.x));
         f += vec3(0.9, 0.95, 1.0) * streif * 0.12;
-        gl_FragColor = vec4(f * 0.05, 1.0);
+        gl_FragColor = vec4(f * 0.022, 1.0);
       }`,
     toneMapped: false,
   }));
@@ -375,9 +375,9 @@ function start() {
       wort.children.forEach((m) => { if (!m.geometry) return; m.geometry.computeBoundingBox(); const bb = m.geometry.boundingBox; box.x0 = Math.min(box.x0, bb.min.x); box.x1 = Math.max(box.x1, bb.max.x); box.y0 = Math.min(box.y0, bb.min.y); box.y1 = Math.max(box.y1, bb.max.y); });
       for (const x of [box.x0, box.x1]) for (const y of [box.y0, box.y1]) for (const z of [-HALB_T, HALB_T]) ecken.push(new Vector3(x, y, z));
     }
-    basis = hochkant ? { x: -0.5, y: 0.14, z: 0.06 } : { x: -0.62, y: 0.22, z: 0.06 };
+    basis = hochkant ? { x: -0.26, y: 0.1, z: 0.04 } : { x: -0.58, y: 0.2, z: 0.06 };
     // gewünschte Fläche im Bild: Querformat etwas breiter als der Schirm (angeschnitten), Hochformat fast bis an die Ränder
-    const sollB = hochkant ? (zeilenHoch.length > 1 && zeilenHoch.some((z) => z.length > 2) ? 1.9 : 2.1) : 2.3, sollH = hochkant ? 1.12 : (zeilenQuer.length > 1 ? 1.5 : 1.8);
+    const sollB = hochkant ? (Math.max(...zeilenHoch.map((z) => z.length)) > 4 ? 1.94 : 2.06) : (Math.max(...zeilenQuer.map((z) => z.length)) > 4 ? 2.0 : 2.3), sollH = hochkant ? 1.12 : (zeilenQuer.length > 1 ? 1.5 : 1.8);
     halter.position.set(0, 0, 0);
     halter.rotation.set(basis.x, basis.y, basis.z);
     skala = 0.02; halter.scale.setScalar(skala);

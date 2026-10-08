@@ -45,7 +45,7 @@ SALONS = [
         tel='089 54 80 56 06', tel_int='+498954805606',
         zeiten=mo_sa(9.5, 20), zeiten_text='Mo bis Sa · 9:30 bis 20 Uhr',
         buchen='https://www.planity.com/de-DE/friseur-omers-hair-80933-munchen',
-        glas=('MIRA', 'MI|RA', 'blau'),
+        glas=('MIRA', 'MIRA', 'blau'),
         seite='mira/', karte='front-mira', karte_alt='Eingang des Salons MIRA mit blau leuchtendem Schild',
         lat=48.2132741, lon=11.5632254,
     ),
@@ -55,7 +55,7 @@ SALONS = [
         tel='089 54 80 56 05', tel_int='+498954805605',
         zeiten=mo_sa(9.5, 20), zeiten_text='Mo bis Sa · 9:30 bis 20 Uhr',
         buchen=None,
-        glas=('BAR|BER', 'BAR|BER', 'eis'),
+        glas=('BARBER', 'BARBER', 'eis'),
         seite='barber-mira/', karte='front-barber', karte_alt='Eingang des Barber Shops MIRA mit Leuchtschrift',
         lat=48.2132741, lon=11.5632254,
     ),
@@ -65,7 +65,7 @@ SALONS = [
         tel='089 621 46 46 9', tel_int='+498962146469',
         zeiten=mo_sa(9, 19), zeiten_text='Mo bis Sa · 9 bis 19 Uhr',
         buchen='https://www.planity.com/de-DE/friseur-omers-hair-isartor-80331-munchen',
-        glas=('ISAR|TOR', 'ISAR|TOR', 'gold'),
+        glas=('ISARTOR', 'ISARTOR', 'gold'),
         seite='isartor/', karte='front-isartor', karte_alt='Leuchtschild Omer’s Hair über dem Eingang des Salons Isartor',
         lat=48.1335879, lon=11.5839159,
     ),
@@ -96,7 +96,8 @@ BREITEN = {
     **{f'front-{n}': (800, 1600) for n in ('mira', 'barber', 'isartor', 'bogenhausen', 'riem')},
     'mira-reihe': (900, 1500), 'mira-wasch': (900, 1500), 'mira-herren': (900, 1800),
     'isartor-raum': (900, 1600), 'isartor-gang': (900, 1600), 'isartor-boegen': (900, 1200),
-    'barber-stuehle': (900, 1500), 'riem-3': (900, 1500),
+    'barber-stuehle': (900, 1500),
+    **{f'insta-{n}': (380, 380) for n in ('haupt-1', 'haupt-2', 'haupt-3', 'mira-1', 'mira-2', 'mira-3')},
 }
 
 TAGE = [('1', 'Montag'), ('2', 'Dienstag'), ('3', 'Mittwoch'), ('4', 'Donnerstag'), ('5', 'Freitag'), ('6', 'Samstag'), ('0', 'Sonntag')]
@@ -511,11 +512,7 @@ def startseite():
           <a class="knopf-still" href="{INSTAGRAM_MIRA}" rel="noopener">{ICO["insta"]}<span>MIRA-Kanal</span></a>
         </div>
       </div>
-      <div class="insta-kacheln">
-        <a href="{INSTAGRAM}" rel="noopener" aria-label="Instagram: Salon Isartor">{bild("front-isartor", "Leuchtschild am Salon Isartor", p, "(max-width: 52rem) 33vw, 16vw")}</a>
-        <a href="{INSTAGRAM_MIRA}" rel="noopener" aria-label="Instagram: Salon MIRA">{bild("mira-wasch", "Waschplätze im Salon MIRA", p, "(max-width: 52rem) 33vw, 16vw")}</a>
-        <a href="{INSTAGRAM}" rel="noopener" aria-label="Instagram: Salon Riem Arcaden">{bild("riem-3", "Barber-Stühle im Salon Riem Arcaden", p, "(max-width: 52rem) 33vw, 16vw")}</a>
-      </div>
+      {insta_kacheln(INSTAGRAM, [("haupt-1", "Blonde Balayage mit weichen Wellen"), ("haupt-2", "Eisblonder Bob mit Wellen"), ("haupt-3", "Dunkelbraune Wellen mit Glanz")], p)}
     </div>
   </section>
 
@@ -803,6 +800,12 @@ def preisliste(gruppen, buchen):
       </div>'''
 
 
+def insta_kacheln(ziel, bilder, p):
+    """Drei Vorschau-Kacheln, jede führt zum Profil."""
+    k = ''.join(f'<a href="{ziel}" rel="noopener" aria-label="Instagram: {e(a)}">{bild("insta-" + n, a, p, "(max-width: 52rem) 31vw, 15vw")}</a>' for n, a in bilder)
+    return f'<div class="insta-kacheln">{k}</div>'
+
+
 def fan_card(p):
     loecher = ''.join(f'<li class="loch">{i}</li>' for i in range(1, 8)) + '<li class="loch"><b>15 €</b></li>'
     return f'''<div class="fan-buehne"><div class="karte-fan" role="img" aria-label="Fan Card mit acht Feldern; das achte Feld ist ein Gutschein über 15 Euro">
@@ -862,15 +865,15 @@ def seite_mira():
 
   {anfahrt(s, p, "05", ["U-Bahn U2 bis Dülferstraße, direkt am Center", "E-Mail <a href=\"mailto:" + MAIL + "\">" + MAIL + "</a>"], etage="UG")}
 
-  <section class="abschnitt anschluss" aria-labelledby="insta-mira">
-    <div class="huelle">
-      <div class="ruf">
-        <div>
-          <h2 id="insta-mira">Der MIRA-Salon auf Instagram.</h2>
-          <p>Aktuelle Looks direkt aus dem Salon. Folgen Sie <a href="{INSTAGRAM_MIRA}" rel="noopener">@omershair_professional_mira</a>.</p>
-        </div>
-        <a class="knopf-still" href="{INSTAGRAM_MIRA}" rel="noopener">{ICO["insta"]}<span>Zu Instagram</span></a>
+  <section class="abschnitt" aria-labelledby="insta-mira">
+    <div class="huelle insta">
+      <div class="insta-text">
+        <p class="etikett"><b>06</b> Einblicke</p>
+        <h2 class="insta-griff" id="insta-mira"><a class="chrom" href="{INSTAGRAM_MIRA}" rel="noopener">@omershair_<wbr>professional_<wbr>mira</a></h2>
+        <p class="leise">Aktuelle Looks direkt aus dem Salon MIRA: Balayage, Strähnen und Wellen.</p>
+        <div class="knoepfe"><a class="knopf-still" href="{INSTAGRAM_MIRA}" rel="noopener">{ICO["insta"]}<span>Folgen</span></a></div>
       </div>
+      {insta_kacheln(INSTAGRAM_MIRA, [("mira-1", "Platinblonde Wellen aus dem Salon MIRA"), ("mira-2", "Glattes Blond mit feinen Strähnen"), ("mira-3", "Braune Wellen mit Glanz")], p)}
     </div>
   </section>
 </main>

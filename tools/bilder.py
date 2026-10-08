@@ -181,11 +181,20 @@ def main(quelle: Path):
     # Galerie Barber: das bessere Foto
     schreiben(look(klein(auf_format(ohne_zeichen(lade('b-stuehle')), 3 / 2), 1500), kontrast=1.15), 'barber-stuehle', (900, 1500))
 
-    # Riem: vorerst nur ein Bild für die Instagram-Kachel; die Seite folgt später (dann range(1, 6))
-    for i in (3,):
-        im = lade(f'ri-{i}')
-        im = im.crop((0, round(im.height * 0.13), im.width, im.height))   # Logo-Streifen oben
-        schreiben(look(klein(auf_format(im, 3 / 2), 1500), kontrast=1.1), f'riem-{i}', (900, 1500))
+    # Riem: Galerie folgt mit der eigenen Seite (dann wieder ri-1 bis ri-5 wie Barber)
+
+    insta(quelle)
+
+
+def insta(quelle: Path):
+    """Vorschau-Kacheln aus den Instagram-Profilen (Bildschirmfotos der Kacheln, insta-*.png).
+    Der Streifen mit dem Symbol oben wird abgeschnitten; Haarfarben bleiben natürlich, nur etwas Kontrast und Schärfe."""
+    from PIL import ImageEnhance
+    for name in ('haupt-1', 'haupt-2', 'haupt-3', 'mira-1', 'mira-2', 'mira-3'):
+        im = Image.open(quelle / f'insta-{name}.png').convert('RGB')
+        im = im.crop((0, round(im.width * 0.24), im.width, im.height))
+        im = ImageEnhance.Contrast(im).enhance(1.05)
+        schreiben(im, f'insta-{name}', (380,), q=84)
 
 
 if __name__ == '__main__':

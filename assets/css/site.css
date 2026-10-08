@@ -17,7 +17,7 @@
 @property --winkel { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
 
 :root {
-  --grund: #030304;
+  --grund: #020203;
   --grund-2: #0c0c11;
   --grund-3: #14141b;
   --glas: rgb(20 20 28 / .62);
@@ -284,6 +284,8 @@ main, .fuss { position: relative; z-index: 2; }
   .auftakt { height: auto; min-height: calc(100svh - var(--kopf)); max-height: none; }
   .riesen { white-space: normal; line-height: .8; }
   .riesen .w { display: block; }
+  .riesen.passend { white-space: nowrap; }       /* Marke in einem Stück, auf die Breite eingepasst */
+  .riesen.passend .w { display: inline; }
   .auftakt::after { height: 58%; background: linear-gradient(transparent, rgb(3 3 4 / .85) 40%, var(--grund) 90%); }
   .auftakt-unten { grid-template-columns: 1fr; gap: 1.5rem; }
   .auftakt-text, .auftakt-staende { grid-column: 1; }
@@ -492,7 +494,7 @@ main, .fuss { position: relative; z-index: 2; }
 .glas-3d { position: absolute; inset: 0; width: 100%; height: 100%; display: block; opacity: 0; transition: opacity 1s var(--kurve); }
 .glas-3d.bereit { opacity: 1; }
 .glas-an .glas-poster { opacity: 0; transition: opacity .6s var(--kurve) .4s; }
-.glas-buehne::after { content: ''; position: absolute; inset: auto 0 0; height: 36%; z-index: 1; pointer-events: none; background: linear-gradient(transparent, rgb(3 3 4 / .72) 48%, var(--grund)); }
+.glas-buehne::after { content: ''; position: absolute; inset: auto 0 0; height: 40%; z-index: 1; pointer-events: none; background: linear-gradient(transparent, rgb(2 2 3 / .82) 48%, var(--grund)); }
 .ort-oben, .ort-unten { position: absolute; left: 0; right: 0; z-index: 2; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); }
 .ort-oben { top: 0; padding-top: 1.1rem; }
 .ort-oben .etikett { grid-column: 1 / span 3; padding-inline: var(--innen); white-space: nowrap; }

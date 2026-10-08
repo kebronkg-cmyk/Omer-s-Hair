@@ -378,7 +378,11 @@
       links.forEach((a) => {
         const an = aktiv && a.getAttribute('href') === '#' + aktiv.id;
         a.classList.toggle('an', !!an);
-        if (an && kapLeiste.scrollWidth > kapLeiste.clientWidth) a.scrollIntoView({ block: 'nearest', inline: 'center', behavior: ruhig ? 'auto' : 'smooth' });
+        // nur die Leiste waagrecht verschieben, nie die Seite (scrollIntoView bremst am iPhone das Scrollen aus)
+        if (an && kapLeiste.scrollWidth > kapLeiste.clientWidth) {
+          const l = a.offsetLeft - (kapLeiste.clientWidth - a.offsetWidth) / 2;
+          if (Math.abs(kapLeiste.scrollLeft - l) > 8) kapLeiste.scrollTo({ left: Math.max(0, l), behavior: ruhig ? 'auto' : 'smooth' });
+        }
       });
     }, { rootMargin: '-35% 0px -55% 0px' });
     ziele.forEach((z) => b.observe(z));
@@ -413,14 +417,14 @@
         const lage = k.querySelector('.ring-lage');
         if (lage) { lage.dataset.text = lage.textContent; lage.textContent = 'Am nächsten · ' + weg + ' Luftlinie'; lage.classList.add('naechster'); }
         const name = k.querySelector('h2')?.textContent || '';
-        sagen(`<b>${name}</b> ist am nächsten – etwa ${weg}.`);
+        sagen(`<b>${name}</b> ist am nächsten, etwa ${weg}.`);
         const ziel = document.getElementById('salons');
         if (ziel && ziel.getBoundingClientRect().top > innerHeight * 0.4) ziel.scrollIntoView({ behavior: ruhig ? 'auto' : 'smooth' });
         if (ring) { ring.neuZeigen(); setTimeout(() => ring.geheZu(i), ruhig ? 0 : 450); }
-        else k.scrollIntoView({ behavior: ruhig ? 'auto' : 'smooth', block: 'nearest', inline: 'center' });
+        else k.parentElement?.scrollTo({ left: k.offsetLeft - 16, behavior: ruhig ? 'auto' : 'smooth' });
       }, () => {
         finderKnoepfe.forEach((k) => k.removeAttribute('aria-busy'));
-        sagen('Standort nicht verfügbar – wählen Sie Ihren Salon einfach im Ring.');
+        sagen('Standort nicht verfügbar. Wählen Sie Ihren Salon einfach im Ring.');
       }, { timeout: 10000, maximumAge: 300000 });
     };
     finderKnoepfe.forEach((k) => k.addEventListener('click', suchen));
