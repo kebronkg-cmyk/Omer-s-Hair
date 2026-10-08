@@ -150,16 +150,20 @@
   staendeZeigen();
   setInterval(staendeZeigen, 60000);
 
-  /* ---------- Salon-Ring: gebogene Karten auf einem Zylinder ---------- */
+  /* ---------- Salon-Ring: Karten außen auf einer Trommel, die Mitte wölbt sich nach vorn ----------
+     Selbstlauf: gleichmäßig und sehr ruhig. Nur im Selbstlauf springt ein blauer Lichtimpuls um den Rahmen,
+     als Blitz zur nächsten Karte und lädt deren Rahmen auf. Jede Berührung beendet das sofort.
+     Antippen holt eine Karte leicht nach vorn (unten geht es zum Salon), Tippen daneben lässt sie wieder laufen. */
   const ringBox = document.querySelector('[data-ring]');
   const ring = (() => {
     if (!ringBox || !CSS.supports('transform-style', 'preserve-3d')) return null;
     const liste = ringBox.querySelector('.ring');
+    const buehne = ringBox.querySelector('.ring-buehne');
     const karten = [...liste.querySelectorAll('.ring-karte')];
     const n = karten.length;
     const panel = ringBox.querySelector('.ring-panel-info');
     const zaehler = ringBox.querySelector('.zaehler');
-    if (!n || !panel) return null;
+    if (!n || !panel || !buehne) return null;
 
     ringBox.classList.add('ring-3d');
     const welt = document.createElement('div');
@@ -169,24 +173,33 @@
     liste.setAttribute('tabindex', '0');
     liste.setAttribute('aria-roledescription', 'Karussell');
 
-    let K = 0, R = 0, W = 0, schritt = 1, abstandPx = 0;
+    // Leinwand für das Licht: liegt über der Bühne, fängt keine Berührungen
+    const RAND = 90;
+    const licht = document.createElement('canvas');
+    licht.className = 'ring-licht';
+    licht.setAttribute('aria-hidden', 'true');
+    buehne.append(licht);
+    const lc = licht.getContext('2d');
+
+    let K = 0, R = 0, W = 0, H = 0, schritt = 1, abstandPx = 0, P = 1400, breite = 0, dpr = 1;
+    const PO_Y = 0.8;          // Augenhöhe weit unten: die Oberkanten wölben sich wie in der Referenz
+    const RUND = 22;           // Eckradius der Karten (wie --rund)
     const bilder = karten.map((k) => k.querySelector('img'));
     bilder.forEach((img) => { if (img) img.loading = 'eager'; });   // versteckte Bilder laden sonst nie
 
     const masse = () => {
       const vw = liste.clientWidth || innerWidth;
       const schmal = vw < 760;
-      // Karten im Format der Ladenfronten (4:3), damit nichts angeschnitten wird
-      const SEITE = 4 / 3;
-      W = schmal ? Math.min(vw * 0.84, 460) : klemmen(vw * 0.4, 380, 640);
-      const H = Math.min(W / SEITE, innerHeight * (schmal ? 0.5 : 0.6));
-      R = W * (schmal ? 1.3 : 1.55);
-      const neuK = schmal ? 9 : 14;
+      const SEITE = 4 / 3;     // Format der Ladenfronten, nichts wird angeschnitten
+      W = schmal ? Math.min(vw * 0.8, 440) : klemmen(vw * 0.42, 400, 660);
+      H = Math.min(W / SEITE, innerHeight * (schmal ? 0.5 : 0.62));
+      R = W * (schmal ? 1.25 : 1.4);
+      P = R * (schmal ? 2.6 : 2.3);
+      const neuK = schmal ? 10 : 16;
       const theta = W / R, delta = theta / neuK;
       const sw = 2 * R * Math.tan(delta / 2);
-      abstandPx = schmal ? 16 : 34;
+      abstandPx = schmal ? 30 : 92;   // Fuge wie in der Referenz, Platz für den Blitz
       schritt = theta + abstandPx / R;
-      // Bild wie object-fit: cover (Bilder sind 4:5)
       let bgw, bgh, ox = 0, oy = 0;
       if (W / H > SEITE) { bgw = W; bgh = W / SEITE; oy = (H - bgh) / 2; } else { bgh = H; bgw = H * SEITE; ox = (W - bgw) / 2; }
       const s = liste.style;
@@ -196,7 +209,8 @@
       s.setProperty('--schritt', sw.toFixed(3) + 'px');
       s.setProperty('--bgw', bgw.toFixed(1) + 'px'); s.setProperty('--bgh', bgh.toFixed(1) + 'px');
       s.setProperty('--ox', ox.toFixed(1) + 'px'); s.setProperty('--oy', oy.toFixed(1) + 'px');
-      s.setProperty('--p', (R * 2.4).toFixed(0) + 'px');
+      s.perspective = P.toFixed(0) + 'px';
+      s.perspectiveOrigin = `50% ${(H * PO_Y).toFixed(1)}px`;
       if (neuK !== K) {
         K = neuK;
         karten.forEach((k, i) => {
@@ -206,14 +220,19 @@
             const st = document.createElement('span');
             st.className = 'streifen' + (j === 0 ? ' erster' : '') + (j === K - 1 ? ' letzter' : '');
             st.style.setProperty('--j', j);
-            st.style.setProperty('--a', (-(j - (K - 1) / 2) * delta).toFixed(5) + 'rad');
             halter.append(st);
           }
           bildSetzen(i);
         });
-      } else {
-        karten.forEach((k) => k.querySelectorAll('.streifen').forEach((st, j) => st.style.setProperty('--a', (-(j - (K - 1) / 2) * delta).toFixed(5) + 'rad')));
       }
+      karten.forEach((k) => k.querySelectorAll('.streifen').forEach((st, j) => st.style.setProperty('--a', ((j - (K - 1) / 2) * delta).toFixed(5) + 'rad')));
+      // Lichtleinwand
+      breite = vw;
+      dpr = Math.min(devicePixelRatio || 1, schmal ? 1.5 : 2);
+      licht.style.top = -RAND + 'px';
+      licht.style.height = (H + 2 * RAND) + 'px';
+      licht.width = Math.round(breite * dpr); licht.height = Math.round((H + 2 * RAND) * dpr);
+      rahmen = rahmenPunkte();
     };
     const bildSetzen = (i) => {
       const img = bilder[i]; if (!img) return;
@@ -221,24 +240,32 @@
       img.complete && img.naturalWidth ? setzen() : img.addEventListener('load', setzen, { once: true });
     };
 
-    let pos = 0, ziel = 0, tau = 140, aktiv = -1;
-    let neigung = 0, neigungZiel = 0, kipp = { x: 0, y: 0 }, kippZiel = { x: 0, y: 0 };
-    // Kein Hereindrehen: der Ring läuft von Anfang an ruhig und gleichmäßig
+    let pos = 0, ziel = 0, tau = 140, aktiv = -1, tempo = 0;
+    let kipp = { x: 0, y: 0 }, kippZiel = { x: 0, y: 0 };
+    let gewaehlt = -1;
+    const vor = karten.map(() => 0);
+    const zuletztGesetzt = karten.map(() => ({ d: -1, g: -1, t: '' }));
     const versatz = (i) => { let o = i - pos; o -= Math.round(o / n) * n; return o; };
     const index = (p) => ((Math.round(p) % n) + n) % n;
+    const vorWeg = () => R * 0.085;   // wie weit eine gewählte Karte nach vorn kommt
 
     const zeichnen = () => {
       for (let i = 0; i < n; i++) {
-        const o = versatz(i), a = -o * schritt, b = Math.abs(o);
+        const o = versatz(i), a = o * schritt, b = Math.abs(o);
         const k = karten[i];
-        const sichtbar = Math.abs(a) < 1.3;
+        const sichtbar = Math.abs(a) < 1.4;
         k.style.visibility = sichtbar ? 'visible' : 'hidden';
         if (!sichtbar) continue;
-        k.style.transform = `translateZ(${R.toFixed(1)}px) rotateY(${a.toFixed(4)}rad)`;
-        k.style.setProperty('--dunkel', Math.min(0.74, b * 0.5).toFixed(3));
-        k.style.setProperty('--glanz', Math.max(0, 1 - b).toFixed(3));
+        const t = `rotateY(${a.toFixed(5)}rad) translateZ(${(vor[i] * vorWeg()).toFixed(2)}px) translateY(${(-vor[i] * 6).toFixed(2)}px)`;
+        const merk = zuletztGesetzt[i];
+        if (t !== merk.t) { k.style.transform = t; merk.t = t; }
+        // Abdunkeln und Glanz nur schreiben, wenn sie sich sichtbar ändern (spart Malarbeit)
+        const dunkel = Math.round(Math.min(0.78, b * 0.52 + (gewaehlt >= 0 && gewaehlt !== i ? 0.25 : 0)) * 100) / 100;
+        const glanz = Math.round(Math.max(0, 1 - b) * 100) / 100;
+        if (dunkel !== merk.d) { k.style.setProperty('--dunkel', dunkel); merk.d = dunkel; }
+        if (glanz !== merk.g) { k.style.setProperty('--glanz', glanz); merk.g = glanz; }
       }
-      welt.style.transform = `rotateX(${(neigung + kipp.y).toFixed(3)}deg) rotateY(${kipp.x.toFixed(3)}deg)`;
+      welt.style.transform = `rotateX(${kipp.y.toFixed(3)}deg) rotateY(${kipp.x.toFixed(3)}deg) translateZ(${(-R).toFixed(1)}px)`;
       const neu = index(pos);
       if (neu !== aktiv) { aktiv = neu; aktivZeigen(); }
     };
@@ -254,114 +281,317 @@
       if (zaehler) zaehler.textContent = String(aktiv + 1).padStart(2, '0') + ' / ' + String(n).padStart(2, '0');
     };
 
-    /* Selbstlauf: dreht langsam von allein; jede Berührung pausiert, danach geht es weiter */
-    // Läuft ständig; nur echtes Antippen oder Ziehen hält ihn kurz an
+    /* ---------- Projektion: derselbe Weg wie im CSS (Streifen → Karte → Welt → Perspektive) ---------- */
+    let rahmen = [];
+    function rahmenPunkte() {
+      // abgerundetes Rechteck in (u = Bogenlänge, v = Höhe), im Uhrzeigersinn ab oben links
+      const pts = [], r = Math.min(RUND, W / 4, H / 4), hw = W / 2;
+      const gerade = (u0, v0, u1, v1, m) => { for (let k = 0; k < m; k++) pts.push([u0 + (u1 - u0) * k / m, v0 + (v1 - v0) * k / m]); };
+      const bogen = (cu, cv, w0) => { for (let k = 0; k < 6; k++) { const w = w0 + (k / 6) * Math.PI / 2; pts.push([cu + r * Math.cos(w), cv + r * Math.sin(w)]); } };
+      gerade(-hw + r, 0, hw - r, 0, 40); bogen(hw - r, r, -Math.PI / 2);
+      gerade(hw, r, hw, H - r, 24); bogen(hw - r, H - r, 0);
+      gerade(hw - r, H, -hw + r, H, 40); bogen(-hw + r, H - r, Math.PI / 2);
+      gerade(-hw, H - r, -hw, r, 24); bogen(-hw + r, r, Math.PI);
+      return pts;
+    }
+    const projizieren = (i, u, v) => {
+      const o = versatz(i), a = o * schritt, be = u / R;
+      let x = R * Math.sin(be), y = v - H / 2, z = R * Math.cos(be) + vor[i] * vorWeg();
+      y -= vor[i] * 6;
+      // Karte: rotateY(a)
+      let x2 = x * Math.cos(a) + z * Math.sin(a), z2 = -x * Math.sin(a) + z * Math.cos(a);
+      // Welt: translateZ(-R), dann rotateY(kipp.x), dann rotateX(kipp.y)
+      z2 -= R;
+      const ky = kipp.x * Math.PI / 180, kx = kipp.y * Math.PI / 180;
+      const x3 = x2 * Math.cos(ky) + z2 * Math.sin(ky), z3 = -x2 * Math.sin(ky) + z2 * Math.cos(ky);
+      const y4 = y * Math.cos(kx) - z3 * Math.sin(kx), z4 = y * Math.sin(kx) + z3 * Math.cos(kx);
+      const X = breite / 2 + x3, Y = H / 2 + y4, ox = breite / 2, oy = H * PO_Y, f = P / (P - z4);
+      return [ox + (X - ox) * f, oy + (Y - oy) * f + RAND, z4];
+    };
+    const rahmenVon = (i) => rahmen.map(([u, v]) => projizieren(i, u, v));
+    const punktAuf = (pfad, s) => { const L = pfad.length, f = ((s % 1) + 1) % 1 * L, k = Math.floor(f), t = f - k, p = pfad[k], q = pfad[(k + 1) % L]; return [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t]; };
+
+    /* ---------- Licht: Umlauf, Sammeln, Blitz, Aufladen ---------- */
+    const glatt = (a, b, x) => { const t = klemmen((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+    const sRechtsMitte = () => { const pts = rahmen; let best = 0, d = Infinity; pts.forEach(([u, v], k) => { const e = Math.abs(u - W / 2) + Math.abs(v - H / 2); if (e < d) { d = e; best = k; } }); return best / pts.length; };
+    const sLinksMitte = () => { const pts = rahmen; let best = 0, d = Infinity; pts.forEach(([u, v], k) => { const e = Math.abs(u + W / 2) + Math.abs(v - H / 2); if (e < d) { d = e; best = k; } }); return best / pts.length; };
+    let funken = [], blitzForm = null, blitzZeit = 0, scharf = -1, effekt = 0, effektZiel = 0, letzteZeichnung = false;
+
+    const leeren = () => { lc.setTransform(1, 0, 0, 1, 0, 0); lc.clearRect(0, 0, licht.width, licht.height); };
+    const linie = (pfad, von, bis, breiteL, farbe, schein) => {
+      lc.beginPath();
+      const L = pfad.length, a = Math.floor(von * L), b = Math.ceil(bis * L);
+      for (let k = a; k <= b; k++) { const p = pfad[((k % L) + L) % L]; k === a ? lc.moveTo(p[0], p[1]) : lc.lineTo(p[0], p[1]); }
+      lc.lineWidth = breiteL; lc.strokeStyle = farbe; lc.shadowBlur = schein; lc.shadowColor = 'rgba(63,130,255,.95)'; lc.stroke();
+    };
+    const ganzerRahmen = (pfad, alpha, dicke = 1.6) => {
+      if (alpha <= 0.01) return;
+      lc.beginPath(); pfad.forEach((p, k) => (k ? lc.lineTo(p[0], p[1]) : lc.moveTo(p[0], p[1]))); lc.closePath();
+      lc.lineWidth = dicke * 3; lc.strokeStyle = `rgba(63,130,255,${(alpha * 0.35).toFixed(3)})`; lc.shadowBlur = 22; lc.shadowColor = 'rgba(63,130,255,.9)'; lc.stroke();
+      lc.lineWidth = dicke; lc.strokeStyle = `rgba(190,220,255,${(alpha * 0.9).toFixed(3)})`; lc.shadowBlur = 8; lc.stroke();
+    };
+    const komet = (pfad, kopf, laenge, alpha) => {
+      const schritte = 12;
+      for (let k = 0; k < schritte; k++) {
+        const s1 = kopf - (k / schritte) * laenge, s0 = kopf - ((k + 1) / schritte) * laenge;
+        const t = 1 - k / schritte;
+        linie(pfad, s0, s1, 1 + 3.2 * t * t, `rgba(${(150 + 105 * t) | 0},${(195 + 60 * t) | 0},255,${(alpha * t * t).toFixed(3)})`, 16 * t);
+      }
+      const [x, y] = punktAuf(pfad, kopf);
+      punkt(x, y, 34 * alpha, alpha);
+    };
+    const punkt = (x, y, r, alpha) => {
+      if (alpha <= 0.01 || r <= 0.5) return;
+      lc.shadowBlur = 0;
+      const g = lc.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, `rgba(255,255,255,${alpha.toFixed(3)})`); g.addColorStop(0.18, `rgba(200,225,255,${(alpha * 0.85).toFixed(3)})`);
+      g.addColorStop(0.45, `rgba(63,130,255,${(alpha * 0.35).toFixed(3)})`); g.addColorStop(1, 'rgba(63,130,255,0)');
+      lc.fillStyle = g; lc.beginPath(); lc.arc(x, y, r, 0, Math.PI * 2); lc.fill();
+    };
+    // Blitz: Mittelpunkt-Verschiebung, dazu ein, zwei Seitenäste
+    const blitzBauen = (a, b) => {
+      let zufall = Math.random;
+      const pts = [a, b];
+      const versetzen = (p, q, tief, weite, aus) => {
+        if (tief === 0) { aus.push(q); return; }
+        const mx = (p[0] + q[0]) / 2, my = (p[1] + q[1]) / 2, dx = q[0] - p[0], dy = q[1] - p[1], l = Math.hypot(dx, dy) || 1;
+        const m = [mx + (-dy / l) * (zufall() - 0.5) * weite, my + (dx / l) * (zufall() - 0.5) * weite];
+        versetzen(p, m, tief - 1, weite * 0.55, aus); versetzen(m, q, tief - 1, weite * 0.55, aus);
+      };
+      const haupt = [a]; versetzen(a, b, 6, Math.hypot(b[0] - a[0], b[1] - a[1]) * 0.32, haupt);
+      const aeste = [];
+      for (let k = 0; k < 2; k++) {
+        const s = haupt[Math.floor(haupt.length * (0.3 + zufall() * 0.4))];
+        const w = Math.atan2(b[1] - a[1], b[0] - a[0]) + (zufall() - 0.5) * 1.6, l = Math.hypot(b[0] - a[0], b[1] - a[1]) * (0.12 + zufall() * 0.16);
+        const ast = [s]; versetzen(s, [s[0] + Math.cos(w) * l, s[1] + Math.sin(w) * l], 4, l * 0.4, ast); aeste.push(ast);
+      }
+      return { haupt, aeste };
+    };
+    const zug2 = (pts, dicke, farbe, schein) => {
+      lc.beginPath(); pts.forEach((p, k) => (k ? lc.lineTo(p[0], p[1]) : lc.moveTo(p[0], p[1])));
+      lc.lineWidth = dicke; lc.strokeStyle = farbe; lc.shadowBlur = schein; lc.shadowColor = 'rgba(63,130,255,1)'; lc.lineJoin = 'round'; lc.lineCap = 'round'; lc.stroke();
+    };
+
+    const lichtZeichnen = (t, dt) => {
+      // Effekt nur im Selbstlauf; bei Berührung blendet er in wenigen Hundertstel aus
+      effekt += (effektZiel - effekt) * (1 - Math.exp(-dt / (effektZiel > effekt ? 260 : 90)));
+      const zyklus = Math.floor(pos), phi = pos - zyklus;
+      if (effekt < 0.004 || scharf !== zyklus) {
+        if (letzteZeichnung) { leeren(); letzteZeichnung = false; }
+        funken = [];
+        return;
+      }
+      leeren(); letzteZeichnung = true;
+      lc.setTransform(dpr, 0, 0, dpr, 0, 0);
+      lc.globalCompositeOperation = 'lighter';
+      const quelle = ((zyklus % n) + n) % n, zielK = (quelle + 1) % n;
+      const A = rahmenVon(quelle), B = rahmenVon(zielK);
+      const sR = sRechtsMitte(), sL = sLinksMitte();
+      const e = effekt;
+      // 1 Umlauf: ein Lichtkopf läuft einmal um den Rahmen und endet rechts in der Mitte
+      const lauf = glatt(0.08, 0.42, phi);
+      if (phi > 0.08 && phi < 0.46) {
+        const kopf = sR - 1 + lauf * 1.0;
+        ganzerRahmen(A, e * (0.15 + 0.55 * lauf), 1.4);
+        komet(A, kopf, 0.26, e * Math.min(1, (phi - 0.08) / 0.04) * (1 - glatt(0.42, 0.46, phi) * 0.4));
+      }
+      const pA = punktAuf(A, sR), pB = punktAuf(B, sL);
+      // 2 Sammeln: die Ladung ballt sich an der Kante
+      if (phi > 0.38 && phi < 0.5) {
+        const s = glatt(0.38, 0.47, phi) * (1 - glatt(0.48, 0.5, phi));
+        punkt(pA[0], pA[1], 18 + 46 * s + Math.sin(t / 30) * 4 * s, e * (0.5 + 0.5 * s));
+        ganzerRahmen(A, e * 0.7 * (1 - glatt(0.47, 0.56, phi)), 1.6);
+      }
+      // 3 Blitz: springt zur nächsten Karte, flackert
+      if (phi > 0.455 && phi < 0.56) {
+        if (!blitzForm || t - blitzZeit > 48) { blitzForm = blitzBauen(pA, pB); blitzZeit = t; }
+        const s = glatt(0.455, 0.47, phi) * (1 - glatt(0.53, 0.56, phi));
+        const flacker = 0.75 + 0.25 * Math.sin(t / 11);
+        const a = e * s * flacker;
+        for (const p of [blitzForm.haupt, ...blitzForm.aeste]) {
+          const ast = p !== blitzForm.haupt;
+          zug2(p, ast ? 6 : 12, `rgba(63,130,255,${(a * 0.22).toFixed(3)})`, 30);
+          zug2(p, ast ? 2 : 4, `rgba(143,186,255,${(a * 0.75).toFixed(3)})`, 14);
+          zug2(p, ast ? 0.8 : 1.6, `rgba(255,255,255,${a.toFixed(3)})`, 4);
+        }
+        punkt(pA[0], pA[1], 40, a * 0.8); punkt(pB[0], pB[1], 56, a);
+        if (phi < 0.5 && funken.length < 2) {
+          for (let k = 0; k < 18; k++) { const w = Math.random() * Math.PI * 2, v = 0.06 + Math.random() * 0.22; funken.push({ x: pB[0], y: pB[1], vx: Math.cos(w) * v, vy: Math.sin(w) * v, leben: 1 }); }
+        }
+      } else blitzForm = null;
+      // Funken am Einschlag
+      lc.shadowBlur = 0;
+      funken = funken.filter((f) => (f.leben -= dt / 650) > 0);
+      for (const f of funken) { f.x += f.vx * dt; f.y += f.vy * dt; f.vx *= 0.985; f.vy *= 0.985; punkt(f.x, f.y, 6 * f.leben + 2, e * f.leben); }
+      // 4 Aufladen: zwei Lichtfronten laufen von links um den Rahmen und treffen sich rechts
+      if (phi > 0.5 && phi < 0.98) {
+        const f = glatt(0.5, 0.8, phi);
+        const halb = 0.5 * f;
+        const nachglut = 1 - glatt(0.84, 0.98, phi);
+        linie(B, sL - halb, sL + halb, 2.2, `rgba(200,225,255,${(e * 0.85 * nachglut).toFixed(3)})`, 14);
+        if (f < 1) { const p1 = punktAuf(B, sL + halb), p2 = punktAuf(B, sL - halb); punkt(p1[0], p1[1], 26, e); punkt(p2[0], p2[1], 26, e); }
+        // Treffen: der ganze Rahmen blitzt einmal auf
+        const blitzAuf = glatt(0.78, 0.82, phi) * (1 - glatt(0.82, 0.95, phi));
+        ganzerRahmen(B, e * blitzAuf * 1.2, 2.2);
+        if (blitzAuf > 0.05) { const pR = punktAuf(B, sR); punkt(pR[0], pR[1], 60 * blitzAuf, e * blitzAuf); }
+      }
+      lc.globalCompositeOperation = 'source-over';
+    };
+
+    /* ---------- Selbstlauf ---------- */
     const SEKUNDEN_JE_KARTE = 5.6;
     let autoAn = !ruhig, pauseBis = 0, ringSichtbar = false, driftet = false;
-    const autoLaeuft = (jetzt) => autoAn && ringSichtbar && !zug && jetzt > pauseBis && !document.hidden;
-    const pausieren = (ms = 5000) => { pauseBis = performance.now() + ms; if (driftet) { driftet = false; ziel = Math.round(pos); tau = 260; } anstossen(); };
+    const autoLaeuft = (jetzt) => autoAn && ringSichtbar && !zug && gewaehlt < 0 && jetzt > pauseBis && !document.hidden;
+    const effektAus = () => { effektZiel = 0; scharf = -1; };
+    const pausieren = (ms = 5000) => {
+      pauseBis = performance.now() + ms; effektAus();
+      if (driftet) { driftet = false; ziel = pos; tempo = 0; }
+      anstossen();
+    };
 
     let bild = 0, zuletzt = 0;
     const schrittBild = (t) => {
-      const dt = zuletzt ? Math.min(64, t - zuletzt) : 16; zuletzt = t;
+      const dt = zuletzt ? Math.min(50, t - zuletzt) : 16; zuletzt = t;
       if (autoLaeuft(t)) {
-        if (!driftet) { driftet = true; ziel = pos; }
-        ziel += dt / (SEKUNDEN_JE_KARTE * 1000); tau = 120;
-      } else if (driftet) { driftet = false; ziel = Math.round(pos); tau = 300; }
-      const f = 1 - Math.exp(-dt / (ruhig ? 1 : tau));
-      pos += (ziel - pos) * f;
-      neigung += (neigungZiel - neigung) * (1 - Math.exp(-dt / 700));
-      kipp.x += (kippZiel.x - kipp.x) * (1 - Math.exp(-dt / 260));
-      kipp.y += (kippZiel.y - kipp.y) * (1 - Math.exp(-dt / 260));
-      if (Math.abs(ziel - pos) < 0.0004) pos = ziel;
+        if (!driftet) {
+          // erst auf die nächste ganze Karte einrasten lassen, dann weich anfahren
+          if (Math.abs(ziel - pos) > 0.002) { pos += (ziel - pos) * (1 - Math.exp(-dt / tau)); }
+          else { driftet = true; pos = ziel; tempo = 0; }
+        }
+        if (driftet) {
+          tempo += (1 - tempo) * (1 - Math.exp(-dt / 1100));          // sanft anfahren
+          pos += (dt / (SEKUNDEN_JE_KARTE * 1000)) * tempo; ziel = pos;
+          // Licht nur für einen Übergang, der im Selbstlauf begonnen hat
+          const phi = pos - Math.floor(pos);
+          if (phi < 0.08 && tempo > 0.35 && scharf !== Math.floor(pos)) { scharf = Math.floor(pos); effektZiel = 1; }
+        }
+      } else {
+        if (driftet) { driftet = false; ziel = pos; }
+        pos += (ziel - pos) * (1 - Math.exp(-dt / (ruhig ? 1 : tau)));
+        if (Math.abs(ziel - pos) < 0.0004) pos = ziel;
+      }
+      for (let i = 0; i < n; i++) { const soll = i === gewaehlt ? 1 : 0; vor[i] += (soll - vor[i]) * (1 - Math.exp(-dt / 240)); if (Math.abs(soll - vor[i]) < 0.002) vor[i] = soll; }
+      kipp.x += (kippZiel.x - kipp.x) * (1 - Math.exp(-dt / 300));
+      kipp.y += (kippZiel.y - kipp.y) * (1 - Math.exp(-dt / 300));
       zeichnen();
-      const ruhe = pos === ziel && Math.abs(neigungZiel - neigung) < 0.01 && Math.abs(kippZiel.x - kipp.x) < 0.01 && Math.abs(kippZiel.y - kipp.y) < 0.01 && !autoLaeuft(t);
-      // pausiert: nach Ablauf der Pause wieder anlaufen
-      if (ruhe && autoAn && ringSichtbar && performance.now() <= pauseBis) setTimeout(anstossen, pauseBis - performance.now() + 20);
+      if (!ruhig) lichtZeichnen(t, dt);
+      const ruhe = pos === ziel && !autoLaeuft(t) && vor.every((v, i) => v === (i === gewaehlt ? 1 : 0))
+        && Math.abs(kippZiel.x - kipp.x) < 0.01 && Math.abs(kippZiel.y - kipp.y) < 0.01 && effekt < 0.004;
+      if (ruhe && autoAn && ringSichtbar && gewaehlt < 0 && performance.now() <= pauseBis) setTimeout(anstossen, pauseBis - performance.now() + 20);
       bild = ruhe ? 0 : requestAnimationFrame(schrittBild);
-      if (!bild) zuletzt = 0;
+      if (!bild) { zuletzt = 0; if (letzteZeichnung) { leeren(); letzteZeichnung = false; } }
     };
     const anstossen = () => { if (!bild) bild = requestAnimationFrame(schrittBild); };
     const geheZu = (i) => {
-      // kürzester Weg rund um den Ring
-      let d = i - index(ziel); d -= Math.round(d / n) * n;
+      let d = i - index(ziel); d -= Math.round(d / n) * n;   // kürzester Weg rund um den Ring
       ziel = Math.round(ziel) + d; anstossen();
     };
+
+    /* ---------- Auswahl: Karte rückt nach vorn ---------- */
+    const waehlen = (i) => {
+      effektAus();
+      if (driftet) { driftet = false; ziel = pos; }
+      gewaehlt = i; tau = 360; geheZu(i);
+      ringBox.classList.add('vorne');
+      anstossen();
+    };
+    const loesen = () => {
+      if (gewaehlt < 0) return;
+      gewaehlt = -1; ringBox.classList.remove('vorne');
+      pauseBis = performance.now() + 450;   // kurz zurückgleiten lassen, dann weich weiterdrehen
+      anstossen();
+    };
+    document.addEventListener('pointerdown', (e) => {
+      if (gewaehlt < 0) return;
+      const k = e.target.closest?.('.ring-karte');
+      if (k && karten.indexOf(k) === gewaehlt) return;
+      if (e.target.closest?.('.ring-panel, .ring-steuer')) return;
+      if (!k) loesen();
+    }, true);
 
     masse();
     zeichnen();
     new ResizeObserver(() => { masse(); zeichnen(); }).observe(liste);
     if ('IntersectionObserver' in window) {
-      new IntersectionObserver(([e]) => { ringSichtbar = e.isIntersecting; if (ringSichtbar) anstossen(); }, { threshold: 0.15 }).observe(liste);
+      new IntersectionObserver(([e]) => { ringSichtbar = e.isIntersecting; if (ringSichtbar) anstossen(); else effektAus(); }, { threshold: 0.15 }).observe(liste);
     }
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) { zuletzt = 0; anstossen(); } });
-    liste.addEventListener('keydown', () => pausieren(8000));
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) { zuletzt = 0; anstossen(); } else effektAus(); });
 
-    /* Ziehen und Wischen */
+    /* ---------- Ziehen und Wischen: folgt dem Finger 1:1, Schwung beim Loslassen ---------- */
     let zug = null, gezogen = false;
-    ringBox.querySelector('[data-ring-zurueck]')?.addEventListener('pointerdown', () => pausieren(5000));
-    // Links nicht als Drag-and-Drop mitnehmen, sonst bricht der Browser das Ziehen ab
     liste.addEventListener('dragstart', (e) => e.preventDefault());
     karten.forEach((k) => k.querySelectorAll('a, img').forEach((x) => x.setAttribute('draggable', 'false')));
     liste.addEventListener('pointerdown', (e) => {
       if (e.button !== 0) return;
-      pausieren(5000);
-      zug = { x: e.clientX, y: e.clientY, p: ziel, t: performance.now(), vx: 0, lx: e.clientX, lt: performance.now(), fest: false };
+      // Auf eine Karte: anhalten. Daneben: nichts anhalten, damit der Ring nach dem Loslassen gleich weiterdreht
+      if (e.target.closest('.ring-karte')) pausieren(5000);
+      zug = { x: e.clientX, y: e.clientY, p: pos, fest: false, spur: [[performance.now(), e.clientX]] };
       gezogen = false;
     });
     addEventListener('pointermove', (e) => {
       if (feinZeiger && !zug) {
         const r = liste.getBoundingClientRect();
         if (e.clientY > r.top - 100 && e.clientY < r.bottom + 100) {
-          kippZiel.x = ((e.clientX / innerWidth) - 0.5) * 5;
-          kippZiel.y = -(((e.clientY - r.top) / r.height) - 0.5) * 4;
+          kippZiel.x = ((e.clientX / innerWidth) - 0.5) * 4;
+          kippZiel.y = -(((e.clientY - r.top) / r.height) - 0.5) * 3;
           anstossen();
         }
       }
       if (!zug) return;
       const dx = e.clientX - zug.x, dy = e.clientY - zug.y;
       if (!zug.fest) {
-        if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) { zug = null; return; }   // senkrecht: Seite scrollen
-        if (Math.abs(dx) < 6) return;
-        zug.fest = true; gezogen = true; liste.classList.add('zieht');
+        if (Math.hypot(dx, dy) < 7) return;
+        if (Math.abs(dy) > Math.abs(dx) * 1.1) { zug = null; return; }   // eher senkrecht: Seite scrollen
+        zug.fest = true; gezogen = true; liste.classList.add('zieht'); pausieren(5000); zug.p = pos + dx / (W + abstandPx);
+        if (gewaehlt >= 0) { gewaehlt = -1; ringBox.classList.remove('vorne'); }
         try { liste.setPointerCapture(e.pointerId); } catch (x) { /* egal */ }
       }
       const jetzt = performance.now();
-      zug.vx = (e.clientX - zug.lx) / Math.max(1, jetzt - zug.lt); zug.lx = e.clientX; zug.lt = jetzt;
-      ziel = zug.p - dx / (W + abstandPx); tau = 50; anstossen();
+      zug.spur.push([jetzt, e.clientX]); while (zug.spur.length > 2 && jetzt - zug.spur[0][0] > 110) zug.spur.shift();
+      ziel = zug.p - dx / (W + abstandPx); tau = 18; anstossen();
     });
     const loslassen = () => {
       if (!zug) return;
       if (zug.fest) {
-        const wurf = -zug.vx * 260 / (W + abstandPx);
-        ziel = Math.round(ziel + klemmen(wurf, -2, 2)); tau = 200; anstossen();
+        const a = zug.spur[0], b = zug.spur[zug.spur.length - 1];
+        const v = (b[1] - a[1]) / Math.max(16, b[0] - a[0]);          // px je ms
+        const wurf = -v * 300 / (W + abstandPx);
+        ziel = Math.round(ziel + klemmen(wurf, -3, 3)); tau = 230; anstossen();
       }
-      zug = null; liste.classList.remove('zieht'); pausieren(4000);
+      const warFest = zug.fest;
+      zug = null; liste.classList.remove('zieht');
+      if (warFest) pausieren(4000);
     };
     addEventListener('pointerup', loslassen);
     addEventListener('pointercancel', loslassen);
+
+    /* Antippen: erst nach vorn holen, zweites Tippen öffnet den Salon */
     liste.addEventListener('click', (e) => {
       if (gezogen) { e.preventDefault(); e.stopPropagation(); gezogen = false; return; }
-      const k = e.target.closest('.ring-karte'); if (!k) return;
+      const k = e.target.closest('.ring-karte');
+      if (!k) { loesen(); return; }
       const i = karten.indexOf(k);
-      if (i !== aktiv) { e.preventDefault(); tau = 260; geheZu(i); }
+      if (i === gewaehlt) return;                     // Link öffnet den Salon
+      e.preventDefault();
+      waehlen(i);
     }, true);
     liste.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowRight') { e.preventDefault(); tau = 200; geheZu(index(ziel) + 1); }
-      if (e.key === 'ArrowLeft') { e.preventDefault(); tau = 200; geheZu(index(ziel) - 1); }
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); loesen(); pausieren(8000); tau = 220; geheZu(index(ziel) + (e.key === 'ArrowRight' ? 1 : -1)); }
+      if (e.key === 'Enter' && gewaehlt < 0) { e.preventDefault(); waehlen(index(ziel)); }
+      if (e.key === 'Escape') loesen();
     });
     let radRuhe = 0;
     liste.addEventListener('wheel', (e) => {
       if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
-      e.preventDefault();
+      e.preventDefault(); loesen();
       pausieren(6000); ziel += e.deltaX / (W * 1.4); tau = 90; anstossen();
-      clearTimeout(radRuhe); radRuhe = setTimeout(() => { ziel = Math.round(ziel); tau = 220; anstossen(); }, 140);
+      clearTimeout(radRuhe); radRuhe = setTimeout(() => { ziel = Math.round(ziel); tau = 240; anstossen(); }, 140);
     }, { passive: false });
-    ringBox.querySelector('[data-ring-zurueck]')?.addEventListener('click', () => { pausieren(8000); tau = 220; geheZu(index(ziel) - 1); });
-    ringBox.querySelector('[data-ring-vor]')?.addEventListener('click', () => { pausieren(8000); tau = 220; geheZu(index(ziel) + 1); });
+    ringBox.querySelector('[data-ring-zurueck]')?.addEventListener('click', () => { loesen(); pausieren(8000); tau = 240; geheZu(index(ziel) - 1); });
+    ringBox.querySelector('[data-ring-vor]')?.addEventListener('click', () => { loesen(); pausieren(8000); tau = 240; geheZu(index(ziel) + 1); });
 
     return {
-      karten, geheZu: (i) => { pausieren(12000); tau = ruhig ? 1 : 420; geheZu(i); },
+      karten, geheZu: (i) => { loesen(); pausieren(12000); tau = ruhig ? 1 : 420; geheZu(i); },
       neuZeigen: () => { aktiv = -1; zeichnen(); },
     };
   })();

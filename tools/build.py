@@ -372,9 +372,9 @@ def ring_karte(s, p, i):
     elif s['id'] == 'barber-mira':
         haupt = f'<a class="knopf" href="tel:{s["tel_int"]}">{ICO["telefon"]}<span>Anrufen</span></a>'
     else:
-        haupt = f'<a class="knopf" href="{s["extern"]}" rel="noopener"><span>Zum Salon</span>{ICO["extern"]}</a>'
+        haupt = f'<a class="knopf" href="{s["extern"]}" rel="noopener" data-salon><span>Zum Salon</span>{ICO["extern"]}</a>'
     ziel = 'Zur Seite' if s['seite'] else 'omers-hair.de'
-    zweit = f'<a class="knopf-still" href="{href}"{" rel=\"noopener\"" if extern else ""}><span>{ziel}</span>{ICO["pfeil"]}</a>' if s['buchen'] or s['id'] == 'barber-mira' else f'<a class="knopf-still" href="{route(s)}" rel="noopener">{ICO["route"]}<span>Route</span></a>'
+    zweit = f'<a class="knopf-still" href="{href}"{" rel=\"noopener\"" if extern else ""} data-salon><span>{ziel}</span>{ICO["pfeil"]}</a>' if s['buchen'] or s['id'] == 'barber-mira' else f'<a class="knopf-still" href="{route(s)}" rel="noopener">{ICO["route"]}<span>Route</span></a>'
     rel = ' rel="noopener"' if extern else ''
     return f'''<li class="ring-karte" data-lat="{s["lat"]}" data-lon="{s["lon"]}" aria-roledescription="Folie" aria-label="{i + 1} von {len(SALONS)}: {e(s["name"])}">
         <a class="ring-bild" href="{href}"{rel} aria-label="{e(s["name"])}">{bild(s["karte"], s["karte_alt"], p, "(max-width: 52rem) 74vw, 34vw", "eager" if i < 3 else "lazy")}</a>

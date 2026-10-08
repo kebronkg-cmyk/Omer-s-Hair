@@ -351,7 +351,7 @@ main, .fuss { position: relative; z-index: 2; }
 /* Mit Skript: Bühne in 3D */
 .ring-buehne { position: relative; }
 .ring-3d .ring-buehne { margin-top: clamp(1.6rem, 4vw, 3rem); }
-.ring-3d .ring { display: block; overflow: visible; padding: 0; height: var(--kh, 600px); position: relative; perspective: var(--p, 1400px); perspective-origin: 50% 50%; touch-action: pan-y; cursor: grab; user-select: none; -webkit-user-select: none; }
+.ring-3d .ring { display: block; overflow: visible; padding: 0; height: var(--kh, 600px); position: relative; perspective: 1400px; perspective-origin: 50% 80%; touch-action: pan-y; cursor: grab; user-select: none; -webkit-user-select: none; }
 .ring-3d .ring.zieht { cursor: grabbing; }
 .ring-3d .ring-welt { position: absolute; left: 50%; top: 0; width: 0; height: var(--kh); -webkit-transform-style: preserve-3d; transform-style: preserve-3d; }
 .ring-3d .ring-karte { position: absolute; left: 0; top: 0; width: 0; height: var(--kh); display: block; -webkit-transform-style: preserve-3d; transform-style: preserve-3d; will-change: transform; }
@@ -364,7 +364,7 @@ main, .fuss { position: relative; z-index: 2; }
   background-image: var(--bild); background-repeat: no-repeat;
   background-size: var(--bgw) var(--bgh);
   background-position: calc(var(--ox) - var(--j) * var(--schritt)) var(--oy);
-  transform: rotateY(var(--a)) translateZ(calc(-1 * var(--r)));
+  transform: rotateY(var(--a)) translateZ(var(--r));   /* außen auf der Trommel: die Mitte wölbt sich nach vorn */
 }
 .streifen::after {   /* Abdunkeln der seitlichen Karten + Glanz */
   content: ''; position: absolute; inset: 0;
@@ -379,6 +379,12 @@ main, .fuss { position: relative; z-index: 2; }
 .ring-karte.aktiv .streifen { box-shadow: 0 -1.5px 0 var(--blau-hell), 0 1.5px 0 var(--blau), 0 -10px 24px -14px var(--blau), 0 10px 26px -14px var(--blau); }
 .ring-karte.aktiv .streifen.erster { box-shadow: -1.5px 0 0 var(--blau-hell), 0 -1.5px 0 var(--blau-hell), 0 1.5px 0 var(--blau), -12px 0 26px -12px var(--blau); }
 .ring-karte.aktiv .streifen.letzter { box-shadow: 1.5px 0 0 var(--blau-hell), 0 -1.5px 0 var(--blau-hell), 0 1.5px 0 var(--blau), 12px 0 26px -12px var(--blau); }
+.ring-licht { position: absolute; left: 0; width: 100%; z-index: 3; pointer-events: none; }
+/* Gewählte Karte: der Weg zum Salon leuchtet unten auf */
+.ring-3d.vorne .ring-karte.aktiv .streifen { box-shadow: 0 -2px 0 #fff, 0 2px 0 var(--blau-hell), 0 -14px 34px -14px var(--blau), 0 14px 34px -14px var(--blau); }
+.ring-3d.vorne .ring-panel [data-salon] { border-color: var(--blau); color: #fff; box-shadow: 0 0 0 1px var(--blau), 0 0 28px -4px var(--neon-schein); }
+@media (prefers-reduced-motion: no-preference) { .ring-3d.vorne .ring-panel [data-salon] { animation: salon-ruf 1.6s var(--kurve) infinite; } }
+@keyframes salon-ruf { 50% { box-shadow: 0 0 0 1px var(--blau-hell), 0 0 40px 0 var(--neon-schein); } }
 .ring-schatten { position: absolute; left: 50%; bottom: -2.4rem; width: min(70vw, 760px); height: 3rem; translate: -50% 0; border-radius: 50%; background: radial-gradient(closest-side, rgb(91 140 255 / .22), transparent); filter: blur(6px); pointer-events: none; }
 
 /* Info zum aktiven Salon */
