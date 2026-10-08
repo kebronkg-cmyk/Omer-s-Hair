@@ -4,3 +4,4 @@
 2 136e39f Chrom-Strähnen in 3D, gebogener Salon-Ring
 3 0e30372 Bilder bearbeitet, nur Blau, neuer Standort-Auftakt
 4 b5c741f Versionsmarken, Safari-sichere Chromschrift
+5 74d8a7b Ladenfronten, Stadtpläne, Preis-Akkordeon, Glasoptik
