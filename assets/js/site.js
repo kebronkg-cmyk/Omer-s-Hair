@@ -27,7 +27,15 @@
 
   /* Menü: nach Klick auf einen Link schließen (Sprungmarken auf derselben Seite) */
   const menue = document.getElementById('menue');
-  menue?.addEventListener('click', (e) => { if (e.target.closest('a')) menue.hidePopover?.(); });
+  menue?.addEventListener('click', (e) => { if (e.target.closest('a')) { menue.hidePopover?.(); menue.classList.remove('offen'); } });
+  // Ältere Browser ohne Popover: Knöpfe schalten eine Klasse
+  if (menue && !('showPopover' in HTMLElement.prototype)) {
+    document.querySelectorAll('[popovertarget="menue"]').forEach((k) => k.addEventListener('click', () => {
+      const auf = k.getAttribute('popovertargetaction') === 'hide' ? false : !menue.classList.contains('offen');
+      menue.classList.toggle('offen', auf);
+    }));
+    addEventListener('keydown', (e) => { if (e.key === 'Escape') menue.classList.remove('offen'); });
+  }
 
   /* ---------- Aktionsleiste am Handy: erst nach dem ersten Bildschirm ---------- */
   const aktion = document.querySelector('.aktion');
@@ -159,7 +167,7 @@
     let pos = 0, ziel = 0, tau = 140, aktiv = -1;
     let neigung = 0, neigungZiel = 0, kipp = { x: 0, y: 0 }, kippZiel = { x: 0, y: 0 };
     let intro = !ruhig, introStart = 0;
-    if (intro) { pos = -2.6; neigung = 16; neigungZiel = 16; welt.style.opacity = '0'; }
+    if (intro) { pos = -2.6; neigung = 16; neigungZiel = 16; liste.style.opacity = '0'; }
     const versatz = (i) => { let o = i - pos; o -= Math.round(o / n) * n; return o; };
     const index = (p) => ((Math.round(p) % n) + n) % n;
 
@@ -214,7 +222,7 @@
       } else if (driftet) { driftet = false; ziel = Math.round(pos); tau = 300; }
       if (intro) {
         const p = klemmen((t - introStart) / 2200, 0, 1);
-        welt.style.opacity = String(klemmen(p * 2.4, 0, 1));
+        liste.style.opacity = String(klemmen(p * 2.4, 0, 1));
         if (p >= 1) { intro = false; tau = 140; }
       }
       const f = 1 - Math.exp(-dt / (ruhig ? 1 : tau));
@@ -258,7 +266,7 @@
         introStart = performance.now(); pauseBis = introStart + 5200; tau = 520; ziel = 0; neigungZiel = 0; anstossen();
       }, { threshold: 0.25 });
       b.observe(liste);
-    } else { intro = false; welt.style.opacity = '1'; }
+    } else { intro = false; liste.style.opacity = '1'; }
 
     /* Ziehen und Wischen */
     let zug = null, gezogen = false;
@@ -323,7 +331,7 @@
     ringBox.querySelector('[data-ring-vor]')?.addEventListener('click', () => { pausieren(8000); tau = 220; geheZu(index(ziel) + 1); });
 
     return {
-      karten, geheZu: (i) => { pausieren(12000); tau = ruhig ? 1 : 420; if (intro) { intro = false; welt.style.opacity = '1'; neigungZiel = 0; } geheZu(i); },
+      karten, geheZu: (i) => { pausieren(12000); tau = ruhig ? 1 : 420; if (intro) { intro = false; liste.style.opacity = '1'; neigungZiel = 0; } geheZu(i); },
       neuZeigen: () => { aktiv = -1; zeichnen(); },
     };
   })();
@@ -365,6 +373,7 @@
     };
     const setzenBild = () => { bogen.style.setProperty('--bild', `url("${img.currentSrc || img.src}")`); bauen(); bogen.classList.add('bereit'); };
     img.complete && img.naturalWidth ? setzenBild() : img.addEventListener('load', setzenBild, { once: true });
+    img.addEventListener('error', () => { bogen.classList.remove('bogen-3d'); welt.remove(); }, { once: true });
     new ResizeObserver(bauen).observe(bogen);
     if (!ruhig) {
       // Neigung folgt Zeiger bzw. Scrollen, dazu ein ganz leichtes Atmen

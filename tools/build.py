@@ -118,6 +118,13 @@ ICO = {
 e = html.escape
 
 
+def ver(pfad):
+    """Versionsmarke aus dem Dateiinhalt: nach jeder Änderung lädt der Browser die neue Datei statt einer alten aus dem Zwischenspeicher."""
+    import hashlib
+    datei = WURZEL / pfad
+    return '?v=' + hashlib.md5(datei.read_bytes()).hexdigest()[:8] if datei.exists() else ''
+
+
 def route(s):
     ziel = f"Omer's Hair, {s['strasse']}, {s['plz']} {s['ort']}".replace('–', '-')
     return 'https://www.google.com/maps/dir/?api=1&destination=' + quote_plus(ziel)
@@ -132,8 +139,9 @@ def bild(name, alt, p, groessen='(max-width: 40rem) 90vw, 33vw', laden='lazy', k
     k, g = BREITEN.get(name, (900, 1800))
     attr = f' class="{klasse}"' if klasse else ''
     fp = ' fetchpriority="high"' if prio else ''
-    srcset = f'{p}assets/img/{name}-{k}.webp {k}w' + (f', {p}assets/img/{name}-{g}.webp {g}w' if g != k else '')
-    return (f'<img{attr} src="{p}assets/img/{name}-{k}.webp" srcset="{srcset}" sizes="{groessen}" '
+    u = lambda b: f'{p}assets/img/{name}-{b}.webp' + ver(f'assets/img/{name}-{b}.webp')
+    srcset = f'{u(k)} {k}w' + (f', {u(g)} {g}w' if g != k else '')
+    return (f'<img{attr} src="{u(k)}" srcset="{srcset}" sizes="{groessen}" '
             f'alt="{e(alt)}" loading="{laden}" decoding="async"{fp}>')
 
 
@@ -178,8 +186,8 @@ def kopf(p, titel, beschreibung, *, ldjson=None, welt=None, bild_og='karte-mira-
 <link rel="icon" href="{p}assets/img/icon-512.png" sizes="512x512">
 <link rel="apple-touch-icon" href="{p}assets/img/icon-180.png">
 <link rel="preload" href="{p}assets/fonts/jost-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-{vor}<link rel="stylesheet" href="{p}assets/css/site.css">
-<script src="{p}assets/js/site.js" defer></script>
+{vor}<link rel="stylesheet" href="{p}assets/css/site.css{ver("assets/css/site.css")}">
+<script src="{p}assets/js/site.js{ver("assets/js/site.js")}" defer></script>
 {extra}{ld}</head>
 '''
 
@@ -392,7 +400,7 @@ def startseite():
     }
     seite = kopf(p, "Omer's Hair Professional – Friseur in München · 5 Salons",
                  "Fünf Salons in München: MIRA, Barber Shop MIRA, Isartor, Forum Bogenhausen und Riem Arcaden. Schnitt, Farbe, Balayage und Barber – Termin online buchen.",
-                 ldjson=org, extra=f'<script type="module" src="{p}assets/js/hero3d.js"></script>\n')
+                 ldjson=org, extra=f'<script type="module" src="{p}assets/js/hero3d.js{ver("assets/js/hero3d.js")}"></script>\n')
     seite += '<body>\n'
     seite += '''<!--
   THESE · Glanz, Licht, Haar: Chromsträhnen fließen durch den ersten Bildschirm, die Salons stehen als gebogene Spiegel im Ring.
@@ -403,7 +411,7 @@ def startseite():
     seite += leiste(p, 'start')
     seite += f'''<main id="inhalt">
   <section class="auftakt" aria-labelledby="auftakt-titel">
-    <img class="auftakt-poster" src="{p}assets/img/auftakt-poster.webp" alt="" aria-hidden="true" fetchpriority="high">
+    <img class="auftakt-poster" src="{p}assets/img/auftakt-poster.webp{ver("assets/img/auftakt-poster.webp")}" alt="" aria-hidden="true" fetchpriority="high">
     <canvas class="auftakt-3d" aria-hidden="true"></canvas>
     {riesen(["OMER'S", "HAIR"])}
     <div></div>

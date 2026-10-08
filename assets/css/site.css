@@ -103,12 +103,14 @@ main, .fuss { position: relative; z-index: 2; }
 
 .chrom {
   background: var(--chrom-glanz) 160% 0 / 260% 100% no-repeat, var(--chrom);
-  -webkit-background-clip: text; background-clip: text; color: transparent;
+  -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
 }
 /* Große Chromschrift: feine Kante oben, Schatten unten, blauer Hauch — wie gegossenes Metall */
-.riesen { filter: drop-shadow(0 1px 0 rgb(255 255 255 / .3)) drop-shadow(0 -1px 0 rgb(0 0 0 / .85)) drop-shadow(0 14px 34px rgb(63 130 255 / .22)); }
+/* Kein filter und keine Bewegung auf der Chromschrift selbst: Safari zeichnet Verlaufsschrift sonst als Rechtecke */
+.riesen { position: relative; isolation: isolate; }
+.riesen::before { content: ''; position: absolute; inset: 10% 5% 0; z-index: -1; pointer-events: none; background: radial-gradient(50% 60% at 50% 70%, rgb(63 130 255 / .16), transparent 70%); }
 @media (prefers-reduced-motion: no-preference) {
-  .js .riesen .chrom { animation: buchstabe 1.4s var(--kurve-weich) backwards, glanz 9s var(--kurve) 1.6s infinite; animation-delay: calc(var(--b) * 45ms + .1s), calc(var(--b) * 70ms + 1.6s); }
+  .js .riesen .chrom { animation: glanz 9s var(--kurve) infinite; animation-delay: calc(var(--b) * 70ms + 1.2s); }
 }
 @keyframes glanz { 0% { background-position: 160% 0, 0 0; } 22%, 100% { background-position: -60% 0, 0 0; } }
 .marke-text { font-weight: 600; text-transform: uppercase; letter-spacing: -.045em; line-height: .78; }
@@ -208,7 +210,8 @@ main, .fuss { position: relative; z-index: 2; }
   border: 0; background: rgb(5 5 7 / .97); color: var(--text);
   -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
 }
-.menue:popover-open { display: flex; flex-direction: column; }
+.menue { display: none; position: fixed; z-index: 200; }
+.menue:popover-open, .menue.offen { display: flex; flex-direction: column; }
 .menue ul { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--linie-2); }
 .menue li { border-bottom: 1px solid var(--linie-2); }
 .menue a { display: flex; justify-content: space-between; align-items: baseline; padding: 1.1rem 0; text-decoration: none; font-size: 2rem; font-weight: 500; letter-spacing: -.03em; }
@@ -331,14 +334,14 @@ main, .fuss { position: relative; z-index: 2; }
 .ring-3d .ring-buehne { margin-top: clamp(2.5rem, 6vw, 4.5rem); }
 .ring-3d .ring { display: block; overflow: visible; padding: 0; height: var(--kh, 600px); position: relative; perspective: var(--p, 1400px); perspective-origin: 50% 50%; touch-action: pan-y; cursor: grab; user-select: none; -webkit-user-select: none; }
 .ring-3d .ring.zieht { cursor: grabbing; }
-.ring-3d .ring-welt { position: absolute; left: 50%; top: 0; width: 0; height: var(--kh); transform-style: preserve-3d; }
-.ring-3d .ring-karte { position: absolute; left: 0; top: 0; width: 0; height: var(--kh); display: block; transform-style: preserve-3d; will-change: transform; }
+.ring-3d .ring-welt { position: absolute; left: 50%; top: 0; width: 0; height: var(--kh); -webkit-transform-style: preserve-3d; transform-style: preserve-3d; }
+.ring-3d .ring-karte { position: absolute; left: 0; top: 0; width: 0; height: var(--kh); display: block; -webkit-transform-style: preserve-3d; transform-style: preserve-3d; will-change: transform; }
 .ring-3d .ring-karte > .ring-info { display: none; }
-.ring-3d .ring-bild { position: absolute; inset: 0; width: 0; height: var(--kh); overflow: visible; background: none; border-radius: 0; transform-style: preserve-3d; aspect-ratio: auto; }
+.ring-3d .ring-bild { position: absolute; inset: 0; width: 0; height: var(--kh); overflow: visible; background: none; border-radius: 0; -webkit-transform-style: preserve-3d; transform-style: preserve-3d; aspect-ratio: auto; }
 .ring-3d .ring-bild img { display: none; }
 .streifen {
   position: absolute; top: 0; left: calc(var(--sw) / -2); width: var(--sw); height: var(--kh);
-  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden; backface-visibility: hidden;
   background-image: var(--bild); background-repeat: no-repeat;
   background-size: var(--bgw) var(--bgh);
   background-position: calc(var(--ox) - var(--j) * var(--schritt)) var(--oy);
@@ -501,8 +504,10 @@ main, .fuss { position: relative; z-index: 2; }
 .bogen > img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--rund); box-shadow: 0 0 0 1px var(--linie-2); }
 .bogen-3d { perspective: var(--p, 1600px); perspective-origin: 50% 50%; }
 .bogen-3d > img { visibility: hidden; }
-.bogen-welt { position: absolute; left: 50%; top: 0; width: 0; height: 100%; transform-style: preserve-3d; opacity: 0; transition: opacity 1.2s var(--kurve); }
-.bogen.bereit .bogen-welt { opacity: 1; }
+.bogen-welt { position: absolute; left: 50%; top: 0; width: 0; height: 100%; -webkit-transform-style: preserve-3d; transform-style: preserve-3d; -webkit-transform-style: preserve-3d; transform-style: preserve-3d; }
+/* Einblenden am Behälter, nicht am 3D-Element selbst (Deckkraft dort würde die Tiefe flach drücken) */
+.bogen-3d { opacity: 0; transition: opacity 1.2s var(--kurve); }
+.bogen-3d.bereit { opacity: 1; }
 .bogen .streifen { box-shadow: 0 -1.5px 0 var(--blau-hell), 0 1.5px 0 var(--blau), 0 -12px 28px -16px var(--blau), 0 14px 30px -16px var(--blau); }
 .bogen .streifen.erster { box-shadow: -1.5px 0 0 var(--blau-hell), 0 -1.5px 0 var(--blau-hell), 0 1.5px 0 var(--blau), -14px 0 30px -14px var(--blau); }
 .bogen .streifen.letzter { box-shadow: 1.5px 0 0 var(--blau-hell), 0 -1.5px 0 var(--blau-hell), 0 1.5px 0 var(--blau), 14px 0 30px -14px var(--blau); }
