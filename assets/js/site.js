@@ -199,19 +199,11 @@
     };
 
     /* Selbstlauf: dreht langsam von allein; jede Berührung pausiert, danach geht es weiter */
-    const SEKUNDEN_JE_KARTE = 6.5;
-    const autoKnopf = ringBox.querySelector('[data-ring-auto]');
-    let autoAn = !ruhig, pauseBis = 0, schwebt = false, ringSichtbar = false, driftet = false;
-    const autoLaeuft = (jetzt) => autoAn && ringSichtbar && !schwebt && !zug && !intro && jetzt > pauseBis && !document.hidden;
+    // Läuft ständig; nur echtes Antippen oder Ziehen hält ihn kurz an
+    const SEKUNDEN_JE_KARTE = 3.4;
+    let autoAn = !ruhig, pauseBis = 0, ringSichtbar = false, driftet = false;
+    const autoLaeuft = (jetzt) => autoAn && ringSichtbar && !zug && !intro && jetzt > pauseBis && !document.hidden;
     const pausieren = (ms = 5000) => { pauseBis = performance.now() + ms; if (driftet) { driftet = false; ziel = Math.round(pos); tau = 260; } anstossen(); };
-    const autoZeigen = () => {
-      if (!autoKnopf) return;
-      autoKnopf.setAttribute('aria-pressed', String(autoAn));
-      autoKnopf.setAttribute('aria-label', autoAn ? 'Automatisches Drehen anhalten' : 'Automatisch drehen');
-    };
-    autoZeigen();
-    autoKnopf?.addEventListener('click', () => { autoAn = !autoAn; autoZeigen(); if (!autoAn) pausieren(0); else { pauseBis = 0; anstossen(); } });
-    if (ruhig && autoKnopf) autoKnopf.hidden = true;
 
     let bild = 0, zuletzt = 0;
     const schrittBild = (t) => {
@@ -252,30 +244,27 @@
       new IntersectionObserver(([e]) => { ringSichtbar = e.isIntersecting; if (ringSichtbar) anstossen(); }, { threshold: 0.15 }).observe(liste);
     }
     document.addEventListener('visibilitychange', () => { if (!document.hidden) { zuletzt = 0; anstossen(); } });
-    if (feinZeiger) {
-      liste.addEventListener('pointerenter', () => { schwebt = true; pausieren(0); });
-      liste.addEventListener('pointerleave', () => { schwebt = false; pauseBis = performance.now() + 1200; anstossen(); });
-    }
-    ringBox.addEventListener('focusin', () => pausieren(8000));
+    liste.addEventListener('keydown', () => pausieren(8000));
 
     /* Hereindrehen, sobald der Ring ins Bild kommt */
     if (intro && 'IntersectionObserver' in window) {
       const b = new IntersectionObserver((es) => {
         if (!es.some((e) => e.isIntersecting)) return;
         b.disconnect();
-        introStart = performance.now(); pauseBis = introStart + 5200; tau = 520; ziel = 0; neigungZiel = 0; anstossen();
+        introStart = performance.now(); pauseBis = introStart + 2600; tau = 520; ziel = 0; neigungZiel = 0; anstossen();
       }, { threshold: 0.25 });
       b.observe(liste);
     } else { intro = false; liste.style.opacity = '1'; }
 
     /* Ziehen und Wischen */
     let zug = null, gezogen = false;
+    ringBox.querySelector('[data-ring-zurueck]')?.addEventListener('pointerdown', () => pausieren(5000));
     // Links nicht als Drag-and-Drop mitnehmen, sonst bricht der Browser das Ziehen ab
     liste.addEventListener('dragstart', (e) => e.preventDefault());
     karten.forEach((k) => k.querySelectorAll('a, img').forEach((x) => x.setAttribute('draggable', 'false')));
     liste.addEventListener('pointerdown', (e) => {
       if (e.button !== 0) return;
-      pausieren(6000);
+      pausieren(5000);
       zug = { x: e.clientX, y: e.clientY, p: ziel, t: performance.now(), vx: 0, lx: e.clientX, lt: performance.now(), fest: false };
       gezogen = false;
     });
@@ -306,7 +295,7 @@
         const wurf = -zug.vx * 260 / (W + abstandPx);
         ziel = Math.round(ziel + klemmen(wurf, -2, 2)); tau = 200; anstossen();
       }
-      zug = null; liste.classList.remove('zieht'); pausieren(6000);
+      zug = null; liste.classList.remove('zieht'); pausieren(4000);
     };
     addEventListener('pointerup', loslassen);
     addEventListener('pointercancel', loslassen);
@@ -467,18 +456,27 @@
     document.querySelectorAll('.trenner').forEach((t) => b.observe(t));
   }
 
-  /* ---------- Preisliste: Wahl merken, per Adresse ansteuern ---------- */
+  /* ---------- Preisliste: Sprungleiste öffnet die passende Gruppe ---------- */
   const preise = document.querySelector('.preise');
   if (preise) {
-    const aus = new URLSearchParams(location.search).get('art') || (location.hash.startsWith('#art-') ? location.hash.slice(5) : null);
-    const wahl = aus || holen('preis-art');
-    if (wahl) preise.querySelector(`input[name="art"][value="${CSS.escape(wahl)}"]`)?.click();
-    preise.addEventListener('change', (e) => {
-      if (e.target.name !== 'art') return;
-      merken('preis-art', e.target.value);
-      const start = preise.querySelector('.gruppen');
-      if (start.getBoundingClientRect().top < 0) start.scrollIntoView({ behavior: ruhig ? 'auto' : 'smooth', block: 'start' });
-    });
+    const gruppen = [...preise.querySelectorAll('details.gruppe')];
+    const links = [...preise.querySelectorAll('[data-oeffne]')];
+    const markieren = () => links.forEach((a) => a.classList.toggle('an', document.getElementById(a.dataset.oeffne)?.open));
+    const oeffnen = (id, rollen) => {
+      const g = document.getElementById(id); if (!g) return;
+      gruppen.forEach((x) => { if (x !== g) x.open = false; });   // für Browser ohne <details name>
+      g.open = true; markieren(); merken('preis-art', id);
+      if (rollen) requestAnimationFrame(() => g.scrollIntoView({ behavior: ruhig ? 'auto' : 'smooth', block: 'nearest' }));
+    };
+    links.forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); oeffnen(a.dataset.oeffne, true); history.replaceState(null, '', '#' + a.dataset.oeffne); }));
+    gruppen.forEach((g) => g.addEventListener('toggle', () => {
+      if (g.open) { gruppen.forEach((x) => { if (x !== g) x.open = false; }); merken('preis-art', g.id); }
+      markieren();
+    }));
+    const art = new URLSearchParams(location.search).get('art');
+    const start = location.hash.startsWith('#art-') ? location.hash.slice(1) : art ? 'art-' + art : holen('preis-art');
+    if (start && document.getElementById(start)) oeffnen(start, location.hash.startsWith('#art-') || !!art);
+    markieren();
   }
 
   /* ---------- Fan Card: stanzt sich selbst, Hologramm folgt dem Finger ---------- */

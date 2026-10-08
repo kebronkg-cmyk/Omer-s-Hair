@@ -1,0 +1,6 @@
+# Gepushte Stände der Website, ältester zuerst: <Nummer> <Commit> <Beschreibung>
+# Wird von tools/version.sh gepflegt. „back“ stellt den Stand vor dem aktuellen wieder her.
+1 b6c84c7 Erste Version: Startseite, Salon MIRA
+2 136e39f Chrom-Strähnen in 3D, gebogener Salon-Ring
+3 0e30372 Bilder bearbeitet, nur Blau, neuer Standort-Auftakt
+4 b5c741f Versionsmarken, Safari-sichere Chromschrift

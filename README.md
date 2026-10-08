@@ -34,15 +34,16 @@ Lokal ansehen: `npx serve .` und `http://localhost:3000` öffnen.
 ## Funktionen
 
 - **3D-Auftakt** (Startseite): fließende Haarsträhnen aus Chrom mit Neon-Spiegelungen (three.js, lokal gebündelt in `assets/js/hero3d.js`, Quelle `tools/hero3d.src.js`). Folgt Maus und Scrollen, pausiert außerhalb des Bildes; Standbild als Rückfall ohne WebGL.
-- **Salon-Ring**: die fünf Salons als gebogene Karten auf einem Zylinder (CSS 3D, jede Karte aus 9–14 Streifen). Dreht sich beim Hereinscrollen herein und danach langsam von allein; Berühren, Ziehen, Wischen, Pfeiltasten oder Maus darüber pausieren. Knopf zum Anhalten. Klick auf eine Seitenkarte dreht sie nach vorn, Klick auf die mittlere öffnet den Salon. Ohne Skript: wischbare Reihe.
+- **Salon-Ring**: die Ladenfronten der fünf Salons als gebogene Karten auf einem Zylinder. Dreht sich von allein (3,4 s je Karte); nur Antippen oder Ziehen hält ihn kurz an. Klick auf eine Seitenkarte dreht sie nach vorn, Klick auf die mittlere öffnet den Salon.
 - **Auf einen Blick**: alle Salons mit Adresse, Live-Status, Telefon und Buchung in einer Liste
 - **Standortseiten**: Name groß in Chrom, gebogener Spiegel mit dem besten Foto, Eckdaten in drei Spalten, Kapitelleiste (Preise · Salon · Fan Card · Stimmen · Anfahrt), die mitläuft
 - **Nächsten Salon finden**: Standort wird nur im Browser verglichen, der Ring dreht zum nächsten Salon und zeigt die Entfernung
 - **Live-Öffnungsstand** nach Münchner Uhr, „5/5 Salons jetzt geöffnet“ im ersten Bildschirm
-- **Preisliste mit Filter** ohne Skript über `:has()`, Wahl wird gemerkt; direkt ansteuerbar mit `/mira/?art=herren`
+- **Preisliste** als Akkordeon mit Sprungleiste, immer nur eine Gruppe offen; direkt ansteuerbar mit `/mira/#art-herren`
+- **Stadtpläne** selbst gerendert aus OpenStreetMap (`tools/karten.py`): leuchtend blaue Straßen, sofort sichtbar, kein Kartendienst beim Besuch
 - **Fan Card** mit Hologramm-Folie, die Finger bzw. Maus folgt, und Stempeln beim Hereinscrollen
 - **Etagenanzeige** UG/EG für Salon und Barber im MIRA, **Aktionsleiste am Handy** (Buchen · Anrufen · Route)
-- **Galerie** mit Blättern (Pfeiltasten, Wischen), **Google Maps erst nach Klick** (DSGVO)
+- **Galerie** mit Blättern (Pfeiltasten, Wischen)
 - Alles mit reduzierter Bewegung und ohne Skript bedienbar; schema.org `HairSalon` je Standort
 
 ## Bilder
@@ -53,7 +54,7 @@ Ausgewählt und einheitlich bearbeitet mit `tools/bilder.py` (kühles Weiß, tie
 python3 tools/bilder.py <ordner-mit-originalen>
 ```
 
-Quellen: MIRA und Isartor in Originalgröße aus den Planity-Einträgen der Salons, Barber Shop und Isartor-Innenräume von der alten Website (900 px). Für Bogenhausen und Riem gibt es noch keine Innenaufnahmen – dort stehen Schriftkarten (`tools/karte.html`), bis Fotos kommen.
+Quellen: MIRA und Isartor in Originalgröße aus den Planity-Einträgen der Salons, Barber Shop und Isartor-Innenräume von der alten Website (900 px). Alle fünf Salons haben echte Fotos; die Ladenfronten im Ring sind nachts gegradet (Leuchtschild betont).
 
 ## Vor dem Livegang
 
@@ -65,7 +66,11 @@ Offene Punkte beim Kunden:
 - [ ] Barber Shop: Etage (EG?), Telefon (089 54 80 56 05?) und Preise bestätigen
 - [ ] Preisliste Isartor
 - [ ] Team-Fotos und Namen, ein Porträt des Inhabers für die Startseite
-- [ ] Innenfotos von Bogenhausen und Riem Arcaden, größere Fotos vom Barber Shop
+- [ ] Fotos in Originalgröße (die alte Website hat nur 900 px), Ladenfront Riem Arcaden
 - [ ] Gilt die Fan Card in allen Salons oder nur im MIRA?
 - [ ] Gehören alle fünf Betriebe zur GmbH, oder läuft Riem separat?
 - [ ] Doppelten Planity-Eintrag des MIRA bereinigen
+
+## Stände und „back“
+
+`tools/version.sh liste` zeigt alle gepushten Stände, `tools/version.sh back` stellt den vorherigen wieder her (als neuer Commit, nichts geht verloren).

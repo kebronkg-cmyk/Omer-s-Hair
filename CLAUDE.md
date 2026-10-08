@@ -101,3 +101,15 @@ Für die Demo als Platzhalter (TODO). Vor dem Livegang die echten Angaben (GmbH,
 - Preisliste Isartor (auf Planity nicht gelistet)
 - Team-Fotos und Namen
 - Ob alle 5 Betriebe einem Inhaber gehören, oder ob Riem separat läuft
+
+## Arbeitsweise: Stände und „back“
+- Nach **jedem Push** den Stand merken: `tools/version.sh merken "kurze Beschreibung"`, committen, pushen.
+- Schreibt der Nutzer **„back“**: `tools/version.sh back` ausführen (stellt den Stand vor dem aktuellen wieder her, als neuer Commit, nichts wird gelöscht), pushen, live prüfen und den Link schicken. Mehrmals „back“ geht jeweils einen Stand weiter zurück.
+- Liste aller Stände: `tools/version.sh liste` bzw. `tools/staende.txt`.
+- Live-Vorschau: https://kebronkg-cmyk.github.io/Omer-s-Hair/ (GitHub Pages, Branch `claude/eager-edison-jcdabw`).
+
+## Gestaltungsregeln (vom Kunden bestätigt)
+- Leitfarbe ist das leuchtende Blau des Leuchtschilds. **Kein Lila, kein Pink**, keine Farbverläufe in diese Richtung.
+- Keine Gedankenstriche („ – “) in Texten, kurze Sätze statt Einschüben.
+- Glas- und Spiegeloptik wie in der Referenz (Denmu, awwwards), Raster aus feinen Linien.
+- Fotos nur aus dem Salon, einheitlich bearbeitet (`tools/bilder.py`); keine Außenaufnahmen der Umgebung.

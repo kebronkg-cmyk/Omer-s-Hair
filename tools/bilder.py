@@ -23,20 +23,16 @@ from PIL import Image, ImageFilter, ImageOps
 ZIEL = Path(__file__).resolve().parent.parent / 'assets' / 'img'
 
 QUELLEN = {
-    'm10': 'mira_ytviyqj2mwfjbaotgqd5.jpg',   # Stuhl mit Logo, nah
-    'm5': 'mira_ewuvpz6b8zooktomt7q7.jpg',    # Stuhlreihe mit Lichtsäulen
-    'm8': 'mira_tgndctpjpe3siod9v0hx.jpg',    # Barber-Stühle
-    'm7': 'mira_qrmmiwxgb8arx5kdcowt.jpg',    # Waschplätze frontal
-    'm2': 'mira_bz7cjffc1y5ybl2z9trz.jpg',    # Werkzeug am Platz
-    'm9': 'mira_xsnxoqot16zemvnd29uz.jpg',    # Glastische
-    'm3': 'mira_cbv4rzizv94c29mfwnjm.jpg',    # Empfang
-    'm6': 'mira_jhatbcnotwbbfv4vqwfl.jpg',    # Produktregal mit Lichtleiste
-    'neon': 'isartor_lbuaorvpfuzkgf7mcrhx.jpg',  # Leuchtschild Isartor
-    'i-raum': 'PHOTO-2024-09-11-11-04-31-900x600.jpg',
-    'i-spiegel': 'PHOTO-2024-09-11-11-04-29-2-900x600.jpg',
-    'i-empfang': 'PHOTO-2024-09-11-11-04-30-900x600.jpg',
-    'b-stuehle': 'Barber-Shop-im-Mira-1.jpg',
-    'b-raum': 'Barber-Shop-im-Mira-2.jpg',
+    # Planity-Uploads der Salons (4032 px)
+    'm10': 'mira_ytviyqj2mwfjbaotgqd5.jpg', 'm5': 'mira_ewuvpz6b8zooktomt7q7.jpg', 'm8': 'mira_tgndctpjpe3siod9v0hx.jpg',
+    'm2': 'mira_bz7cjffc1y5ybl2z9trz.jpg', 'neon': 'isartor_lbuaorvpfuzkgf7mcrhx.jpg',
+    # Website omers-hair-mira.de (900 px, Wasserzeichen unten rechts bzw. Logo oben rechts)
+    'mira-front': 'Omers-Hair-Mira-05.jpg', 'mira-lang': 'Omers-Hair-Mira-03.jpg', 'mira-reihe': 'Omers-Hair-Mira-04.jpg',
+    'mira-wasch': 'Omers-Hair-Mira-01.jpg', 'mira-empfang': 'Omers-Hair-Mira-02.jpg',
+    'b-front': 'Barber-Shop-im-Mira-3.jpg', 'b-stuehle': 'Barber-Shop-im-Mira-1.jpg', 'b-raum': 'Barber-Shop-im-Mira-2.jpg',
+    'bo-front': 'Omers-Hair-Richard-Strauss-Str-D.jpg', 'ri-tresen': 'Omers-Hair-Riem-Arcaden-05.jpg',
+    # Website, 1600 px
+    'i-raum': 'PHOTO-2024-09-11-11-04-29-2.jpg', 'i-boegen': 'PHOTO-2024-09-11-11-04-31-5.jpg', 'i-gang': 'PHOTO-2024-09-11-11-04-31.jpg',
 }
 
 
@@ -59,7 +55,7 @@ def hsv_rgb(h, s, v):
     return np.stack([r + m, g + m, b + m], -1)
 
 
-def look(im: Image.Image, hell=1.0, kontrast=1.0) -> Image.Image:
+def look(im: Image.Image, hell=1.0, kontrast=1.0, nacht=0.0) -> Image.Image:
     a = np.asarray(im).astype(np.float32) / 255
     # 1. Weißabgleich an den hellen, wenig gesättigten Flächen (Wände, Fliesen) → neutral bis leicht kühl
     h, s, v = rgb_hsv(a)
@@ -86,11 +82,19 @@ def look(im: Image.Image, hell=1.0, kontrast=1.0) -> Image.Image:
     lum = (a @ np.array([0.299, 0.587, 0.114]))[..., None]
     schatten = np.clip(1 - lum * 2.2, 0, 1) ** 1.5
     a = a + schatten * np.array([-0.012, 0.004, 0.035])
+    # 4b. Nacht: dunkler, kühler, Blau leuchtet (für Ladenfronten im Ring)
+    if nacht:
+        lum = (a @ np.array([0.299, 0.587, 0.114]))[..., None]
+        h2, s2, v2 = rgb_hsv(a)
+        blau = ((h2 > 200) & (h2 < 250) & (s2 > 0.35))[..., None]
+        a = a * (1 - 0.32 * nacht) + (lum ** 1.6) * 0.18 * nacht           # Mitten dunkler, Lichter bleiben
+        a = a + np.array([-0.02, 0.0, 0.05]) * nacht * (1 - lum)            # kühle Schatten
+        a = np.where(blau, np.clip(a * np.array([0.9, 1.05, 1.25]), 0, 1), a)  # Leuchtschild kräftiger
     # 5. leichte Vignette
     hh, ww = a.shape[:2]
     y, x = np.ogrid[:hh, :ww]
     r = np.sqrt(((x - ww / 2) / (ww / 2)) ** 2 + ((y - hh / 2) / (hh / 2)) ** 2)
-    a = a * (1 - 0.16 * np.clip(r - 0.55, 0, 1) ** 1.6)[..., None]
+    a = a * (1 - (0.16 + 0.3 * nacht) * np.clip(r - 0.45, 0, 1) ** 1.6)[..., None]
     return Image.fromarray((np.clip(a, 0, 1) * 255).astype(np.uint8))
 
 
@@ -126,36 +130,43 @@ def schreiben(im, name, breiten, q=82):
         print(f'{name}-{b}.webp', out.size)
 
 
+def ohne_zeichen(im):
+    """Wasserzeichen der alten Website liegt im unteren Streifen: abschneiden."""
+    return im.crop((0, 0, im.width, round(im.height * 0.875)))
+
+
 def main(quelle: Path):
     lade = lambda k: ImageOps.exif_transpose(Image.open(quelle / QUELLEN[k])).convert('RGB')
+    klein = lambda im, b: schwach_aufwerten(im, b)
 
-    # Karten im Ring (4:5)
-    schreiben(look(auf_format(lade('m5'), 0.8, 0.42)), 'karte-mira', (640, 1200))
-    schreiben(look(auf_format(lade('neon'), 0.8, 0.5, 0.3), hell=1.02), 'karte-isartor', (640, 1200))
-    b = lade('b-stuehle').crop((0, 0, 900, 560))      # Wasserzeichen unten rechts weg
-    schreiben(look(schwach_aufwerten(auf_format(b, 0.8, 0.3), 1000), kontrast=1.2), 'karte-barber', (640, 1000))
+    # Ring: Ladenfronten (4:5), nachts gegradet
+    schreiben(look(klein(lade('mira-front').crop((300, 0, 748, 536)).crop((0, 0, 428, 535)), 1000), kontrast=1.25, nacht=1), 'front-mira', (640, 1000))
+    schreiben(look(klein(lade('b-front').crop((215, 0, 643, 535)), 1000), kontrast=1.25, nacht=1), 'front-barber', (640, 1000))
+    schreiben(look(auf_format(lade('neon'), 0.8, 0.5, 0.3), kontrast=1.15, nacht=0.8), 'front-isartor', (640, 1200))
+    schreiben(look(klein(lade('bo-front').crop((470, 0, 898, 535)), 1000), kontrast=1.2, nacht=0.6), 'front-bogenhausen', (640, 1000))
+    schreiben(look(klein(lade('ri-tresen').crop((0, 60, 428, 595)), 1000), kontrast=1.2, nacht=1), 'front-riem', (640, 1000))
 
-    # Spiegelbilder der Standortseiten (4:5)
-    schreiben(look(auf_format(lade('m10'), 0.8, 0.78)), 'ort-mira', (700, 1400))
-    schreiben(look(auf_format(lade('neon'), 0.8, 0.5, 0.18), hell=1.02), 'ort-isartor', (700, 1400))
-    schreiben(look(schwach_aufwerten(auf_format(lade('b-stuehle').crop((0, 0, 900, 560)), 0.8, 0.12), 1000), kontrast=1.2), 'ort-barber', (640, 1000))
+    # Spiegel der Standortseiten (4:5), die schärfsten Fotos
+    schreiben(look(auf_format(lade('m5'), 0.8, 0.42), kontrast=1.1, nacht=0.35), 'ort-mira', (700, 1400))
+    schreiben(look(auf_format(lade('i-boegen'), 0.8, 0.5, 0.35), kontrast=1.15, nacht=0.35), 'ort-isartor', (700, 1200))
+    schreiben(look(klein(auf_format(ohne_zeichen(lade('b-stuehle')), 0.8, 0.3), 1000), kontrast=1.2, nacht=0.45), 'ort-barber', (640, 1000))
 
     # Galerie MIRA
-    schreiben(look(lade('m5')), 'mira-reihe', (900, 1800))
+    schreiben(look(klein(ohne_zeichen(lade('mira-lang')), 1500), kontrast=1.15), 'mira-lang', (900, 1500))
+    schreiben(look(klein(ohne_zeichen(lade('mira-reihe')), 1500), kontrast=1.15), 'mira-reihe', (900, 1500))
+    schreiben(look(klein(ohne_zeichen(lade('mira-wasch')), 1500), kontrast=1.15), 'mira-wasch', (900, 1500))
+    schreiben(look(auf_format(lade('m10'), 0.8, 0.78)), 'mira-stuhl', (700, 1400))
     schreiben(look(lade('m8')), 'mira-herren', (900, 1800))
-    schreiben(look(lade('m7')), 'mira-wasch', (900, 1800))
     schreiben(look(auf_format(lade('m2'), 0.8, 0.3)), 'mira-werkzeug', (700, 1400))
-    schreiben(look(zuschnitt(lade('m9'), (0.42, 0.28, 1.0, 1.0))), 'mira-tische', (900, 1800))
-    schreiben(look(zuschnitt(lade('m3'), (0.12, 0.08, 0.88, 1.0)), hell=0.98), 'mira-empfang', (900, 1800))
-    schreiben(look(zuschnitt(lade('m6'), (0.0, 0.12, 1.0, 0.86))), 'mira-pflege', (900, 1800))
 
-    # Galerie Isartor (ältere 900-px-Fotos, aufgewertet)
-    schreiben(look(schwach_aufwerten(lade('i-raum'), 1500), kontrast=1.15), 'isartor-raum', (900, 1500))
-    schreiben(look(schwach_aufwerten(zuschnitt(lade('i-spiegel'), (0.0, 0.0, 0.62, 1.0)), 1100), kontrast=1.15), 'isartor-spiegel', (700, 1100))
-    schreiben(look(schwach_aufwerten(zuschnitt(lade('i-empfang'), (0.33, 0.47, 0.82, 0.97)), 1100), kontrast=1.2), 'isartor-tresen', (700, 1100))
+    # Galerie Isartor (1600 px)
+    schreiben(look(lade('i-raum'), kontrast=1.1), 'isartor-raum', (900, 1600))
+    schreiben(look(lade('i-gang'), kontrast=1.1), 'isartor-gang', (900, 1600))
+    schreiben(look(lade('i-boegen'), kontrast=1.1), 'isartor-boegen', (700, 1200))
 
     # Galerie Barber
-    schreiben(look(schwach_aufwerten(lade('b-raum').crop((0, 0, 900, 540)), 1500), kontrast=1.2), 'barber-raum', (900, 1500))
+    schreiben(look(klein(ohne_zeichen(lade('b-raum')), 1500), kontrast=1.2), 'barber-raum', (900, 1500))
+    schreiben(look(klein(ohne_zeichen(lade('b-stuehle')), 1500), kontrast=1.2), 'barber-stuehle', (900, 1500))
 
 
 if __name__ == '__main__':

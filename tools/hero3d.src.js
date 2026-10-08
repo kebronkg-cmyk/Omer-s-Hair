@@ -3,7 +3,7 @@
 import {
   WebGLRenderer, Scene, PerspectiveCamera, Group, Mesh, BufferGeometry, BufferAttribute,
   MeshPhysicalMaterial, MeshBasicMaterial, PlaneGeometry, BoxGeometry, PMREMGenerator,
-  CatmullRomCurve3, Vector3, Color, ACESFilmicToneMapping, SRGBColorSpace, BackSide, MathUtils,
+  CatmullRomCurve3, Vector3, Color, NeutralToneMapping, SRGBColorSpace, BackSide, MathUtils,
 } from 'three';
 
 const leinwand = document.querySelector('.auftakt-3d');
@@ -26,14 +26,15 @@ function umgebung(renderer) {
     const m = new Mesh(new PlaneGeometry(b, h), new MeshBasicMaterial({ color: new Color(farbe).multiplyScalar(staerke) }));
     m.position.set(x, y, z); m.rotation.set(rx, ry, 0); raum.add(m);
   };
-  leiste('#3f82ff', -9, 2, -6, 4.2, 18, 0.6, 0, 8.0);
-  leiste('#2a6bff', 9, -1, -5, 4.4, 16, -0.6, 0, 7.0);
-  leiste('#3f82ff', 0, -9, 4, 20, 3.4, 0, -1.2, 5.0);
-  leiste('#ffffff', 0, 11, 0, 16, 5, 0, 1.5, 4.2);
-  leiste('#ffffff', -12, 0, 6, 1.6, 18, 1.4, 0, 3.0);
-  leiste('#3f82ff', 12, 4, 8, 1.2, 14, -1.6, 0, 3.8);
-  leiste('#ffffff', 4, -3, 13, 3, 10, Math.PI, 0, 2.4);
-  leiste('#d9e7ff', 0, 0, 14, 22, 0.8, Math.PI, 0, 2.0);
+  // Schmale, harte Lichtleisten: auf Glas entstehen so scharfe Kanten statt Flächen
+  leiste('#3f82ff', -9, 2, -6, 1.1, 18, 0.6, 0, 9.0);
+  leiste('#2a6bff', 9, -1, -5, 1.2, 16, -0.6, 0, 8.0);
+  leiste('#3f82ff', 0, -9, 4, 20, 0.9, 0, -1.2, 6.0);
+  leiste('#ffffff', 0, 11, 0, 16, 1.0, 0, 1.5, 7.0);
+  leiste('#ffffff', -12, 0, 6, 0.5, 18, 1.4, 0, 5.0);
+  leiste('#8fbaff', 12, 4, 8, 0.4, 14, -1.6, 0, 5.0);
+  leiste('#ffffff', 4, -3, 13, 0.6, 10, Math.PI, 0, 4.0);
+  leiste('#d9e7ff', 0, 2, 14, 22, 0.25, Math.PI, 0, 4.0);
   const pmrem = new PMREMGenerator(renderer);
   const env = pmrem.fromScene(raum, 0.03).texture;
   pmrem.dispose();
@@ -78,32 +79,40 @@ function straehne(kurve, radius, segmente, rund) {
 function start() {
   const renderer = new WebGLRenderer({ canvas: leinwand, antialias: true, alpha: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(devicePixelRatio, klein ? 1.5 : 1.75));
-  renderer.toneMapping = ACESFilmicToneMapping;
+  renderer.toneMapping = NeutralToneMapping;   // hält Blau rein (ACES kippt gesättigtes Blau ins Violette)
   renderer.toneMappingExposure = 1.22;
   renderer.outputColorSpace = SRGBColorSpace;
+  renderer.transmissionResolutionScale = klein ? 0.5 : 0.75;   // Glas-Durchsicht in halber Auflösung reicht, spart Leistung
 
   const szene = new Scene();
   szene.environment = umgebung(renderer);
+  szene.background = new Color('#050507');   // Glas bricht dunklen Grund statt leeren Puffer
   const kamera = new PerspectiveCamera(32, 1, 0.1, 100);
   kamera.position.set(0, 0, 12);
 
   const zeit = { value: 0 };
-  const stoff = (farbe, irisierend) => {
-    const m = new MeshPhysicalMaterial({
-      color: farbe, metalness: 1, roughness: 0.06, clearcoat: 1, clearcoatRoughness: 0.05,
-      envMapIntensity: 1.4 + irisierend * 0.2,
-    });
-    // Strähnen wogen: Verschiebung quer zur Laufrichtung, weich und langsam
+  // Strähnen wogen: Verschiebung quer zur Laufrichtung, weich und langsam (gilt für alle Stoffe gleich)
+  const wogen = (m) => {
     m.onBeforeCompile = (s) => {
       s.uniforms.uZeit = zeit;
       s.vertexShader = 'uniform float uZeit;\n' + s.vertexShader.replace('#include <begin_vertex>', `
         vec3 transformed = vec3(position);
+        float lauf = clamp((position.x + 10.0) / 20.0, 0.0, 1.0);
         float welle = sin(position.x * 0.55 + uZeit * 0.55) * 0.32 + sin(position.x * 1.3 - uZeit * 0.8 + position.z) * 0.08;
-        transformed.y += welle * smoothstep(0.0, 0.25, uv.x) * smoothstep(1.0, 0.75, uv.x);
+        transformed.y += welle * smoothstep(0.0, 0.25, lauf) * smoothstep(1.0, 0.75, lauf);
         transformed.z += cos(position.x * 0.4 + uZeit * 0.45) * 0.25;`);
     };
     return m;
   };
+  // Klares Glas mit blauer Tiefe, wie die gegossenen Buchstaben der Referenz
+  const glas = () => wogen(new MeshPhysicalMaterial({
+    color: '#ffffff', metalness: 0, roughness: 0.035, transmission: 1, thickness: 1.1, ior: 1.52,
+    attenuationColor: new Color('#5b95ff'), attenuationDistance: 3.2,
+    clearcoat: 1, clearcoatRoughness: 0.02, specularIntensity: 1, envMapIntensity: 1.8,
+  }));
+  const chrom = (farbe) => wogen(new MeshPhysicalMaterial({ color: farbe, metalness: 1, roughness: 0.05, clearcoat: 1, clearcoatRoughness: 0.04, envMapIntensity: 1.5 }));
+  // Leuchtender Kern im Glas
+  const kern = (farbe, staerke) => wogen(new MeshBasicMaterial({ color: new Color(farbe).multiplyScalar(staerke), toneMapped: false }));
 
   const gruppe = new Group();
   szene.add(gruppe);
@@ -114,17 +123,21 @@ function start() {
     const spreiz = 1 - Math.abs(f) * 0.6;
     // Schwung wie im Logo: links unten herein, Bogen, rechts oben hinaus — die Enden fächern auf
     const pts = [
-      new Vector3(-10, -3.6 + f * 4.2, -1.5 + f * 2.2),
-      new Vector3(-5.4, -1.8 + f * 2.0, 0.6 + f * 1.2),
-      new Vector3(-1.4, 0.0 + f * 1.1, 1.6 * spreiz),
-      new Vector3(2.2, 0.8 + f * 1.3, 0.4 - f * 1.4),
-      new Vector3(5.6, 2.0 + f * 2.4, -0.4 - f * 1.8),
-      new Vector3(10, 3.6 + f * 4.4, -2.0 + f * 1.6),
+      new Vector3(-10, -3.8 + f * 5.4, -1.5 + f * 2.6),
+      new Vector3(-5.4, -1.8 + f * 2.8, 0.6 + f * 1.4),
+      new Vector3(-1.4, 0.0 + f * 1.8, 1.6 * spreiz),
+      new Vector3(2.2, 0.8 + f * 2.0, 0.4 - f * 1.6),
+      new Vector3(5.6, 2.0 + f * 3.2, -0.4 - f * 2.0),
+      new Vector3(10, 3.6 + f * 5.6, -2.0 + f * 1.8),
     ];
     const kurve = new CatmullRomCurve3(pts, false, 'catmullrom', 0.5);
-    const r = 0.26 + (1 - Math.abs(f) * 1.3) * 0.14 + (i % 3 === 0 ? 0.08 : 0);
-    const farbe = i % 4 === 1 ? '#5f93ff' : i % 4 === 3 ? '#a8c6ff' : '#ffffff';
-    gruppe.add(new Mesh(straehne(kurve, r, segmente, rund), stoff(farbe, i % 2 ? 1 : 0.6)));
+    const r = 0.21 + (1 - Math.abs(f) * 1.3) * 0.12 + (i % 3 === 0 ? 0.07 : 0);
+    if (i % 3 === 1) {
+      gruppe.add(new Mesh(straehne(kurve, r * 0.55, segmente, rund), chrom(i % 2 ? '#ffffff' : '#a8c6ff')));
+    } else {
+      gruppe.add(new Mesh(straehne(kurve, r * 0.8, segmente, rund), glas()));
+      gruppe.add(new Mesh(straehne(kurve, r * 0.16, Math.round(segmente * 0.6), 8), kern(i % 2 ? '#ffffff' : '#3f82ff', i % 2 ? 1.3 : 2.0)));
+    }
   }
   gruppe.rotation.set(0.12, -0.18, -0.08);
   let basisZ = -0.08;
