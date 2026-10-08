@@ -33,16 +33,19 @@ Lokal ansehen: `npx serve .` und `http://localhost:3000` öffnen.
 
 ## Funktionen
 
-- **Live-Öffnungsstand** nach Münchner Uhr („Jetzt geöffnet · bis 20:00 Uhr“), heutiger Tag in der Tabelle markiert
-- **Nächsten Salon finden**: Standort wird nur im Browser verglichen und verlässt das Gerät nicht
-- **Spiegel mit LED-Kante**: Licht zieht sich beim Auftritt einmal herum, der Glanz folgt dem Zeiger bzw. beim Handy dem Wischen; jeder Salon hat seine eigene Lichtfarbe
-- **Preisliste mit Filter** (Damen, Farbe, Herren, Kinder, Extras) ohne Skript über `:has()`, die Wahl wird gemerkt; direkt ansteuerbar mit `/mira/?art=herren`
-- **Fan Card**, die sich beim Hereinscrollen selbst stempelt
-- **Etagenanzeige** UG/EG für Salon und Barber im MIRA
-- **Aktionsleiste am Handy**: Buchen · Anrufen · Route
-- **Galerie** mit Blättern (Pfeiltasten, Wischen), Fokus kehrt zurück
-- **Google Maps erst nach Klick** (DSGVO)
-- schema.org `HairSalon` je Standort, eigener Titel und eigene Beschreibung je Seite
+- **3D-Auftakt** (Startseite): fließende Haarsträhnen aus Chrom mit Neon-Spiegelungen (three.js, lokal gebündelt in `assets/js/hero3d.js`, Quelle `tools/hero3d.src.js`). Folgt Maus und Scrollen, pausiert außerhalb des Bildes; Standbild als Rückfall ohne WebGL.
+- **Salon-Ring**: die fünf Salons als gebogene Karten auf einem Zylinder (CSS 3D, jede Karte aus 9–14 Streifen). Dreht sich beim Hereinscrollen langsam herein; ziehen, wischen, Pfeiltasten oder Klick auf eine Seitenkarte drehen, Klick auf die mittlere öffnet den Salon. Ohne Skript: wischbare Reihe.
+- **Nächsten Salon finden**: Standort wird nur im Browser verglichen, der Ring dreht zum nächsten Salon und zeigt die Entfernung
+- **Live-Öffnungsstand** nach Münchner Uhr, „5/5 Salons jetzt geöffnet“ im ersten Bildschirm
+- **Preisliste mit Filter** ohne Skript über `:has()`, Wahl wird gemerkt; direkt ansteuerbar mit `/mira/?art=herren`
+- **Fan Card** mit Hologramm-Folie, die Finger bzw. Maus folgt, und Stempeln beim Hereinscrollen
+- **Etagenanzeige** UG/EG für Salon und Barber im MIRA, **Aktionsleiste am Handy** (Buchen · Anrufen · Route)
+- **Galerie** mit Blättern (Pfeiltasten, Wischen), **Google Maps erst nach Klick** (DSGVO)
+- Alles mit reduzierter Bewegung und ohne Skript bedienbar; schema.org `HairSalon` je Standort
+
+## Bilder
+
+Salonfotos MIRA und Isartor in Originalgröße aus den Planity-Einträgen der Salons (vom Inhaber hochgeladen), Barber Shop von der alten Website (nur 900 px). Für Bogenhausen und Riem gibt es noch keine Innenaufnahmen – dort stehen gestaltete Schriftkarten (`tools/karte.html`), bis Fotos kommen.
 
 ## Vor dem Livegang
 
@@ -54,7 +57,7 @@ Offene Punkte beim Kunden:
 - [ ] Barber Shop: Etage (EG?), Telefon (089 54 80 56 05?) und Preise bestätigen
 - [ ] Preisliste Isartor
 - [ ] Team-Fotos und Namen, ein Porträt des Inhabers für die Startseite
-- [ ] Größere Originalfotos (die vorhandenen sind 900 px breit)
+- [ ] Innenfotos von Bogenhausen und Riem Arcaden, größere Fotos vom Barber Shop
 - [ ] Gilt die Fan Card in allen Salons oder nur im MIRA?
 - [ ] Gehören alle fünf Betriebe zur GmbH, oder läuft Riem separat?
 - [ ] Doppelten Planity-Eintrag des MIRA bereinigen
