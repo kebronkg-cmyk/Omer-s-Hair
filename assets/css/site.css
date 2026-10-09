@@ -403,7 +403,7 @@ main, .fuss { position: relative; z-index: 2; }
 .ring-info h2 a { text-decoration: none; }
 .ring-info address { color: var(--text-2); font-size: .95rem; }
 @media (prefers-reduced-motion: no-preference) {
-  .ring-panel .ring-info.neu > * { animation: hoch .7s var(--kurve-weich) backwards; }
+  .ring-panel .ring-info.neu > * { animation: menue-auf .6s var(--kurve) backwards; }   /* Wechsel nur als Blende */
   .ring-panel .ring-info.neu > :nth-child(2) { animation-delay: .04s; }
   .ring-panel .ring-info.neu > :nth-child(3) { animation-delay: .08s; }
   .ring-panel .ring-info.neu > :nth-child(n+4) { animation-delay: .12s; }
@@ -801,7 +801,7 @@ html.kopf-weg .kapitel-halter { top: 0; }
 /* ---------- Auftritt ---------- */
 
 @media (prefers-reduced-motion: no-preference) {
-  .js .auftritt { opacity: 0; transform: translateY(22px); transition: opacity .8s var(--kurve), transform 1s var(--kurve-weich); }
+  .js .auftritt { opacity: 0; transition: opacity .9s var(--kurve); }   /* nur einblenden, nichts rutscht */
   .js .auftritt.auftritt-da { opacity: 1; transform: none; }
   .js .auftakt-text > *, .js .auftakt-staende, .js .ort-text > *, .js .ort-karte { animation: hoch 1s var(--kurve-weich) backwards; }
   .js .auftakt-text > :nth-child(2), .js .ort-text > :nth-child(2) { animation-delay: .08s; }

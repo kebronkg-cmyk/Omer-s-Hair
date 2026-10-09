@@ -284,6 +284,14 @@
       if (neu !== aktiv) { aktiv = neu; aktivZeigen(); }
     };
 
+    // Platz unter dem Ring so hoch wie die längste Salon-Info, damit beim Wechsel nichts darunter springt
+    const panelHoehe = () => {
+      panel.style.minHeight = '';
+      let max = 0;
+      for (const k of karten) { panel.replaceChildren(k.querySelector('.ring-info').cloneNode(true)); max = Math.max(max, panel.offsetHeight); }
+      panel.style.minHeight = max + 'px';
+      if (aktiv >= 0) { panel.replaceChildren(karten[aktiv].querySelector('.ring-info').cloneNode(true)); }
+    };
     const aktivZeigen = () => {
       const vorn = vornPlatz();
       plaetze.forEach((k, i) => k.classList.toggle('aktiv', i === vorn));
@@ -526,7 +534,10 @@
 
     masse();
     zeichnen();
-    new ResizeObserver(() => { masse(); zeichnen(); }).observe(liste);
+    panelHoehe();
+    let panelBreite = panel.clientWidth;
+    new ResizeObserver(() => { masse(); zeichnen(); if (panel.clientWidth !== panelBreite) { panelBreite = panel.clientWidth; panelHoehe(); } }).observe(liste);
+    document.fonts?.ready.then(panelHoehe);
     if ('IntersectionObserver' in window) {
       new IntersectionObserver(([e]) => { ringSichtbar = e.isIntersecting; if (ringSichtbar) anstossen(); else effektAus(); }, { threshold: 0.15 }).observe(liste);
     }
@@ -783,7 +794,8 @@
   }
 
   /* ---------- Auftritt in Dreiergruppen ---------- */
-  if (!ruhig && 'IntersectionObserver' in window) {
+  // Einblenden nur mit Maus: am Handy bewegt sich beim Scrollen nichts von selbst
+  if (!ruhig && feinZeiger && 'IntersectionObserver' in window) {
     const stuecke = [...document.querySelectorAll('.abschnitt-kopf, .haus-liste li, .galerie button, .insta-kacheln a, .ruf, .gruppe-kopf, .etage, .bald, .ring-kopf, .fuss-orte li')]
       .filter((el) => el.getBoundingClientRect().top > innerHeight);
     stuecke.forEach((el) => el.classList.add('auftritt'));
