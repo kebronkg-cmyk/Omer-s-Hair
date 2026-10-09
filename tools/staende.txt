@@ -10,3 +10,4 @@
 8 24ceb42 Scrollen repariert, Namen in einem Stück, Instagram-Vorschau
 9 7637d5b Ring nach vorn gewölbt, Lichtimpuls, Antippen
 10 789d3d9 Ring ruhiger, Rückseiten, neue Fotos MIRA/Barber
+11 e692a5b Handy: kein Rutschen beim Scrollen
