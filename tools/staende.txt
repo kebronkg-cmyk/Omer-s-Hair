@@ -1,0 +1,13 @@
+# Gepushte Stände der Website, ältester zuerst: <Nummer> <Commit> <Beschreibung>
+# Wird von tools/version.sh gepflegt. „back“ stellt den Stand vor dem aktuellen wieder her.
+1 b6c84c7 Erste Version: Startseite, Salon MIRA
+2 136e39f Chrom-Strähnen in 3D, gebogener Salon-Ring
+3 0e30372 Bilder bearbeitet, nur Blau, neuer Standort-Auftakt
+4 b5c741f Versionsmarken, Safari-sichere Chromschrift
+5 74d8a7b Ladenfronten, Stadtpläne, Preis-Akkordeon, Glasoptik
+6 49e5710 Glas-Schrift, Ladenfronten, Riem-Seite, Preis-Studio
+7 1a261b7 Glasschrift, Strähnen erste Fassung, Raster, Ladevorgang
+8 24ceb42 Scrollen repariert, Namen in einem Stück, Instagram-Vorschau
+9 7637d5b Ring nach vorn gewölbt, Lichtimpuls, Antippen
+10 789d3d9 Ring ruhiger, Rückseiten, neue Fotos MIRA/Barber
+11 e692a5b Handy: kein Rutschen beim Scrollen
